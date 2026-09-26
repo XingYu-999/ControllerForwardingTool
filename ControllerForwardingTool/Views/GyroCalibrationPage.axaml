@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
+             x:Class="ControllerForwardingTool.Views.GyroCalibrationPage" x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="18">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+      <StackPanel Spacing="5"><TextBlock Classes="eyebrow" Text="MOTION LAB / 校准与高级设置" /><TextBlock Classes="title" Text="陀螺仪校准" /><TextBlock Text="{Binding TesterSummary}" Classes="caption" /></StackPanel>
+      <Button Grid.Column="1" Content="返回手柄测试" Command="{Binding NavigateCommand}" CommandParameter="手柄测试" VerticalAlignment="Center" />
+    </Grid>
+    <Border Classes="card" Padding="20">
+      <Grid ColumnDefinitions="230,*" ColumnSpacing="28">
+        <StackPanel Spacing="6">
+          <views:MotionCubeControl Height="180" Orientation="{Binding TesterOrientation}" HasMotion="{Binding TesterHasMotion}" />
+          <TextBlock Text="{Binding GyroStationaryStatus}" Classes="caption" HorizontalAlignment="Center" />
+          <Button Content="姿态回正" Command="{Binding RecenterMotionCommand}" IsEnabled="{Binding TesterHasMotion}" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="三轴角速度" /><TextBlock Classes="caption" Grid.Column="1" Text="校正 / 平滑后 · °/s" /></Grid>
+          <Grid ColumnDefinitions="80,*,76" ColumnSpacing="12"><TextBlock Text="俯仰 · X" Classes="caption" VerticalAlignment="Center" /><views:SignedAxisBar Grid.Column="1" Value="{Binding GyroPitchDps}" Height="26" /><TextBlock Grid.Column="2" Classes="mono" Text="{Binding GyroPitchDps, StringFormat={}{0:F2}}" VerticalAlignment="Center" HorizontalAlignment="Right" /></Grid>
+          <Grid ColumnDefinitions="80,*,76" ColumnSpacing="12"><TextBlock Text="偏航 · Y" Classes="caption" VerticalAlignment="Center" /><views:SignedAxisBar Grid.Column="1" Value="{Binding GyroYawDps}" Height="26" /><TextBlock Grid.Column="2" Classes="mono" Text="{Binding GyroYawDps, StringFormat={}{0:F2}}" VerticalAlignment="Center" HorizontalAlignment="Right" /></Grid>
+          <Grid ColumnDefinitions="80,*,76" ColumnSpacing="12"><TextBlock Text="横滚 · Z" Classes="caption" VerticalAlignment="Center" /><views:SignedAxisBar Grid.Column="1" Value="{Binding GyroRollDps}" Height="26" /><TextBlock Grid.Column="2" Classes="mono" Text="{Binding GyroRollDps, StringFormat={}{0:F2}}" VerticalAlignment="Center" HorizontalAlignment="Right" /></Grid>
+          <TextBlock Classes="caption" Text="中点为静止，显示范围 ±5 °/s；超出范围时圆点停在端点，数值保留实际速度。" />
+          <TextBlock Classes="caption" Text="姿态融合陀螺仪与重力，可自由翻转。偏航是相对角度，可用姿态回正消除累计偏移。" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+          <StackPanel Spacing="6"><TextBlock Classes="section" Text="手动静置校准" /><TextBlock Classes="caption" Text="将手柄放在稳定的水平桌面上并松手。校准会测量三轴零偏，静止时角速度应接近 0。" /></StackPanel>
+          <Button Grid.Column="1" Classes="primary" Content="校准 · 3 秒" Command="{Binding CalibrateGyroCommand}" IsEnabled="{Binding CanCalibrate}" VerticalAlignment="Center" />
+        </Grid>
+        <TextBlock Text="{Binding GyroStatus}" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding GyroManualProgressText}" Classes="caption" IsVisible="{Binding IsCalibrating}" />
+        <ProgressBar Value="{Binding CalibrationProgress}" Maximum="100" Height="5" MinWidth="0" IsVisible="{Binding IsCalibrating}" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+          <StackPanel Spacing="6"><TextBlock Classes="mono" Text="{Binding GyroRawText, StringFormat=原始 RAW · {0}}" /><TextBlock Classes="mono" Text="{Binding GyroCorrectedText, StringFormat=校正 CAL · {0}}" /><TextBlock Classes="caption" Text="{Binding GyroBiasText, StringFormat=三轴零偏 · {0}}" /></StackPanel>
+          <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center"><Button Content="取消校准" Command="{Binding CancelCalibrationCommand}" IsVisible="{Binding IsCalibrating}" /><Button Content="重置零偏" Command="{Binding ResetGyroCommand}" IsEnabled="{Binding TesterHasMotion}" /></StackPanel>
+        </Grid>
+      </StackPanel>
+    </Border>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="5"><TextBlock Classes="section" Text="使细微动作平滑" /><TextBlock Classes="caption" Text="减轻小幅角速度抖动，快速转动保持直接响应。" /></StackPanel><ToggleSwitch OnContent="启用" OffContent="关闭" Grid.Column="1" IsChecked="{Binding SmoothGyroMotion}" AutomationProperties.Name="使细微动作平滑" VerticalAlignment="Center" /></Grid>
+        <Border Height="1" Background="{StaticResource Border}" />
+        <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="5"><TextBlock Classes="section" Text="静态下自动校准陀螺仪漂移" /><TextBlock Classes="caption" Text="仅在连续静止且数据稳定时更新零偏，移动或输入中断后重新计时。" /></StackPanel><ToggleSwitch OnContent="启用" OffContent="关闭" Grid.Column="1" IsChecked="{Binding AutoGyroCalibration}" AutomationProperties.Name="静态下自动校准陀螺仪漂移" VerticalAlignment="Center" /></Grid>
+        <StackPanel Spacing="16" IsEnabled="{Binding AutoGyroCalibration}">
+          <Border Classes="inset" Padding="16">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="角速度静止阈值" /><TextBlock Grid.Column="1" Text="{Binding GyroAngularActivityText}" Classes="mono" /></Grid>
+              <views:InputLevelBar Value="{Binding GyroAngularActivity}" Height="5" ClipToBounds="True" />
+              <Grid ColumnDefinitions="*,110" ColumnSpacing="18"><Slider Value="{Binding GyroAngularThreshold}" Minimum="0.2" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True" AutomationProperties.Name="角速度静止阈值" /><TextBlock Grid.Column="1" Classes="mono" Text="{Binding GyroAngularThreshold, StringFormat={}{0:F1} °/s}" VerticalAlignment="Center" HorizontalAlignment="Right" /></Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="inset" Padding="16">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="加速度变化阈值" /><TextBlock Grid.Column="1" Text="{Binding GyroAccelerationActivityText}" Classes="mono" /></Grid>
+              <views:InputLevelBar Value="{Binding GyroAccelerationActivity}" Height="5" ClipToBounds="True" />
+              <Grid ColumnDefinitions="*,110" ColumnSpacing="18"><Slider Value="{Binding GyroAccelerationThreshold}" Minimum="0.01" Maximum="0.15" TickFrequency="0.005" IsSnapToTickEnabled="True" AutomationProperties.Name="加速度变化阈值" /><TextBlock Grid.Column="1" Classes="mono" Text="{Binding GyroAccelerationThreshold, StringFormat={}{0:F3} g}" VerticalAlignment="Center" HorizontalAlignment="Right" /></Grid>
+            </StackPanel>
+          </Border>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16"><TextBlock Text="连续静止时长" Classes="section" VerticalAlignment="Center" /><NumericUpDown Grid.Column="1" Value="{Binding GyroStationarySeconds}" Minimum="2" Maximum="10" Increment="1" Width="140" FormatString="0 秒" AutomationProperties.Name="连续静止时长" /></Grid>
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="caption" Text="自动校准进度" /><TextBlock Grid.Column="1" Classes="mono" Text="{Binding AutoGyroProgress, StringFormat={}{0:F0}%}" /></Grid>
+          <ProgressBar Value="{Binding AutoGyroProgress}" Maximum="100" Height="6" MinWidth="0" />
+          <TextBlock Text="{Binding GyroAutoStatus}" Classes="caption" />
+        </StackPanel>
+        <TextBlock Classes="caption" Text="调低阈值可减少把缓慢移动误判为静止的情况。调整到手持移动时进度不会完成、放稳后能完成。" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16"><TextBlock Classes="caption" Text="{Binding GyroSettingsResult}" VerticalAlignment="Center" /><Button Grid.Column="1" Content="保存校准设置" Command="{Binding SaveGyroSettingsCommand}" /></Grid>
+      </StackPanel>
+    </Border>
+    <TextBlock Classes="caption" Text="Windows 手柄校准用于本应用测试；NS2 BLE 校准和平滑也用于本应用的体感虚拟输出。零偏按当前设备会话独立计算，不写入 Steam 或手柄固件。" />
+  </StackPanel>
+</UserControl>

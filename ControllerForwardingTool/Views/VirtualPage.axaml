@@ -1,0 +1,147 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views" x:Class="ControllerForwardingTool.Views.VirtualPage" x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="18">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+      <StackPanel Spacing="5"><TextBlock Classes="eyebrow" Text="VIRTUAL ARENA / 手柄转换" /><TextBlock Classes="title" Text="选择你的游戏身份" /><TextBlock Classes="caption" Text="选择输入手柄和输出身份，将实时按键、摇杆与可用体感转发为虚拟 USB。" /></StackPanel>
+      <Border Grid.Column="1" Classes="badge" VerticalAlignment="Center"><TextBlock Text="{Binding BridgeLinkText}" Classes="caption" /></Border>
+    </Grid>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="12">
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="01 / 输入手柄" /><Button Grid.Column="1" Content="刷新输入设备" Command="{Binding RefreshGamepadsCommand}" /></Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="16" IsEnabled="{Binding CanEditMode}">
+          <ComboBox ItemsSource="{Binding BridgeInputKinds}" SelectedItem="{Binding BridgeInputSelection}" HorizontalAlignment="Stretch" AutomationProperties.Name="虚拟输出的输入类型" />
+          <ComboBox Grid.Column="1" ItemsSource="{Binding BridgeInputDevices}" SelectedItem="{Binding SelectedBridgeGamepad}" PlaceholderText="选择实体 Xbox / Switch / PlayStation 手柄" HorizontalAlignment="Stretch" IsEnabled="{Binding IsWindowsBridgeInput}" AutomationProperties.Name="虚拟输出的实体输入手柄" />
+        </Grid>
+        <TextBlock Text="{Binding BridgeSourceStatus}" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding BridgeSourceHint}" Classes="caption" />
+        <TextBlock Classes="caption" Text="支持 SDL 标准映射的 USB / 已配对蓝牙手柄。体感、触摸坐标、C / 背键等源设备未提供的能力不会凭空生成；不启用键盘替代。输入型号与输出型号可不同，切换前先停止输出。" />
+      </StackPanel>
+    </Border>
+    <TextBlock Classes="section" Text="02 / 输出身份" />
+    <Border Background="#EAF7EF" BorderBrush="#9BCDAA" BorderThickness="1" CornerRadius="12" Padding="18,14">
+      <StackPanel Spacing="5">
+        <TextBlock Text="{Binding VirtualModeStatus}" FontSize="24" FontWeight="Bold" Foreground="#176B37" />
+        <TextBlock Text="切换模式前请先停止当前输出" IsVisible="{Binding IsServerRunning}" Foreground="#176B37" />
+      </StackPanel>
+    </Border>
+    <ItemsControl ItemsSource="{Binding ModeCards}" IsEnabled="{Binding CanEditMode}">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="5" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:VirtualModeCard">
+          <Button Classes="modeCard" Classes.selected="{Binding IsSelected}" Command="{Binding SelectCommand}" HorizontalAlignment="Stretch" Margin="0,0,10,0" Padding="0" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Profile.Name}" ToolTip.Tip="{Binding Profile.Description}">
+            <Grid RowDefinitions="28,184,Auto,Auto,Auto" Background="White">
+              <Grid ColumnDefinitions="*,Auto" Margin="12,8,8,0">
+                <TextBlock Text="{Binding Profile.Name}" FontSize="10" FontWeight="Bold" Foreground="{Binding Profile.Accent}" />
+                <TextBlock Grid.Column="1" Text="● 运行中" IsVisible="{Binding IsRunning}" FontSize="11" FontWeight="Bold" Foreground="#176B37" />
+              </Grid>
+              <Image Grid.Row="1" Source="{Binding Image}" Stretch="Uniform" Margin="16,12,16,12" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <Border Grid.Row="2" Background="White" Padding="12,14,12,0"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Profile.Name}" FontWeight="Bold" FontSize="18" /><TextBlock Grid.Column="1" Text="✓" Foreground="{Binding Profile.Accent}" IsVisible="{Binding IsSelected}" FontWeight="Bold" /></Grid></Border>
+              <Border Grid.Row="3" Background="White" Padding="12,6,12,0"><TextBlock Text="{Binding Profile.Description}" TextWrapping="Wrap" MinHeight="46" FontSize="11" Foreground="{Binding Profile.Accent}" /></Border>
+              <Border Grid.Row="4" Background="White" Padding="12,8,12,14"><TextBlock Text="{Binding Profile.Identity}" Classes="mono" FontSize="11" /></Border>
+            </Grid>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Border Classes="card" Padding="20">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+        <StackPanel Spacing="8"><TextBlock Text="{Binding SelectedModeCard.Profile.Description}" Classes="section" /><TextBlock Text="{Binding SelectedModeCard.Profile.Protocol}" Classes="mono" /><TextBlock Text="{Binding VirtualState}" Classes="caption" /><TextBlock Classes="caption" Text="切换身份前先停止当前输出。各输出线路独立保存配置；NS2 背键默认映射左右摇杆按下，可在启动前配置。" /></StackPanel>
+        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+          <Button Classes="primary" Content="启动虚拟 USB · 自动连接" Command="{Binding StartServerCommand}" IsEnabled="{Binding CanStartVirtual}" HorizontalAlignment="Stretch" />
+          <Button Content="配置 USB/IP 驱动" HorizontalAlignment="Stretch" Command="{Binding RefreshDriverStateCommand}" IsEnabled="{Binding CanManageDriver}">
+            <Button.Flyout><Flyout Placement="BottomEdgeAlignedRight"><views:DriverSettingsPanel Width="360" Margin="4" /></Flyout></Button.Flyout>
+          </Button>
+          <TextBlock IsVisible="{Binding !IsDriverReady}" Classes="caption" Text="需安装 / 修复驱动后才能启动" Foreground="{StaticResource WarningText}" MaxWidth="230" />
+          <Button Content="停止当前输出" Command="{Binding StopServerCommand}" IsEnabled="{Binding IsServerRunning}" HorizontalAlignment="Stretch" />
+          <Button Content="查看 Windows 输入" Command="{Binding OpenWindowsTesterCommand}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="section" Text="按键映射" />
+        <TextBlock Classes="caption" Text="为当前输出线路单独配置 NS2 输入的按键映射；无需先启动输出。运行后可实时对照输入与输出。" TextWrapping="Wrap" />
+        <Button Classes="primary" Content="打开按键映射" Command="{Binding OpenMappingPreviewCommand}" HorizontalAlignment="Left" />
+      </StackPanel>
+    </Border>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><StackPanel Spacing="4"><TextBlock Classes="section" Text="{Binding RouteConfigurationTitle}" /><TextBlock Classes="caption" Text="仅保存当前线路；切换时保留本次未保存的修改，重启后恢复已保存配置。启动输出也会应用并保存当前线路。" /></StackPanel><Button Grid.Column="1" Classes="primary" Content="应用并保存此线路" Command="{Binding ApplyBridgeSettingsCommand}" VerticalAlignment="Center" /></Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="24">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="震动倍率" /><TextBlock Grid.Column="1" Classes="metric" Text="{Binding RumbleMultiplier, StringFormat={}{0:F1}×}" /></Grid>
+            <Slider Value="{Binding RumbleMultiplier}" Minimum="0" Maximum="3" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+            <TextBlock Classes="caption" Text="调节回传至输入手柄的震动；0 为静音，1 为原始强度。Windows 输入转换为普通双马达，无法保留 HD 波形或自适应扳机阻力。" />
+            <TextBlock Classes="section" Text="推送频率 / Push Hz" />
+            <ComboBox ItemsSource="{Binding PushRates}" SelectedItem="{Binding PushRate}" HorizontalAlignment="Stretch" />
+            <TextBlock Classes="caption" Text="跟随输入源帧：有新输入即发送，取消软件固定间隔。按目标手柄默认 USB 上限：NS1 125 Hz，其他当前输出型号 250 Hz；这是兼容参考值，不保证所有实体固件具有相同上限。也可选择固定频率。无新输入约 250 ms 后归零；实际接收仍受系统和 USB 驱动影响。" />
+            <CheckBox Content="PS5 音频保护" IsChecked="{Binding AudioProtection}" />
+            <TextBlock Classes="caption" Text="PS5 模式每 5 秒检查默认音频；若被虚拟设备接管，改回可用的非 DualSense 设备。" />
+            <Button Content="立即修复默认音频" Command="{Binding RepairAudioCommand}" HorizontalAlignment="Left" />
+            <TextBlock Classes="caption" Text="{Binding AudioResult}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="10">
+            <TextBlock Classes="section" Text="摇杆处理 / Stick" />
+            <CheckBox Content="使用本设备的中心 / 行程校准" IsChecked="{Binding UseStickCalibration}" />
+            <TextBlock Classes="caption" Text="NS2 BLE 中心和行程参数按蓝牙设备保存；Windows 输入使用 SDL 标准轴值。下方死区对两种输入源均生效。" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><ComboBox ItemsSource="{Binding DeadzoneModes}" SelectedItem="{Binding OutputDeadzoneMode}" HorizontalAlignment="Stretch" /><TextBlock Grid.Column="1" Classes="metric" Text="{Binding OutputDeadzone, StringFormat={}{0:F0}%}" VerticalAlignment="Center" /></Grid>
+            <Slider Value="{Binding OutputDeadzone}" Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" />
+            <TextBlock Classes="caption" Text="实际输出死区：过滤中心漂移并重映射剩余行程；默认 0%，保持直通。" />
+          </StackPanel>
+        </Grid>
+        <TextBlock Text="{Binding ConfigurationResult}" Classes="caption" />
+        <Expander Header="本地 VIIPER 服务 / 端口配置" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="12" Margin="0,12,0,0">
+            <TextBlock Classes="caption" Text="Backend：VIIPER server（稳定） · Host：127.0.0.1（本机）。0 自动选择空闲端口；自定义端口在下次启动时生效。" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16" IsEnabled="{Binding CanEditMode}">
+              <StackPanel Spacing="5"><TextBlock Classes="caption" Text="API 控制端口" /><NumericUpDown Value="{Binding ApiPort}" Minimum="0" Maximum="65535" FormatString="0" /></StackPanel>
+              <StackPanel Grid.Column="1" Spacing="5"><TextBlock Classes="caption" Text="USB/IP 设备端口" /><NumericUpDown Value="{Binding UsbPort}" Minimum="0" Maximum="65535" FormatString="0" /></StackPanel>
+            </Grid>
+          </StackPanel>
+        </Expander>
+        <Expander Header="PS5 体感方向与倍率 / 陀螺仪" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="12" Margin="0,12,0,0">
+            <TextBlock Classes="caption" Text="按源软件转换：NS2 的 X / Z / −Y → PS5 俯仰 / 偏航 / 横滚。倍率仅作用于 PS5 与 Edge，不修改原始测试读数。" />
+            <UniformGrid Columns="3">
+              <StackPanel Spacing="6" Margin="0,0,12,0"><TextBlock Classes="caption" Text="俯仰 / Pitch" /><NumericUpDown Value="{Binding GyroPitchScale}" Minimum="0.1" Maximum="4" Increment="0.1" FormatString="0.0" /><CheckBox Content="反转方向" IsChecked="{Binding InvertPitch}" /></StackPanel>
+              <StackPanel Spacing="6" Margin="0,0,12,0"><TextBlock Classes="caption" Text="偏航 / Yaw" /><NumericUpDown Value="{Binding GyroYawScale}" Minimum="0.1" Maximum="4" Increment="0.1" FormatString="0.0" /><CheckBox Content="反转方向" IsChecked="{Binding InvertYaw}" /></StackPanel>
+              <StackPanel Spacing="6"><TextBlock Classes="caption" Text="横滚 / Roll" /><NumericUpDown Value="{Binding GyroRollScale}" Minimum="0.1" Maximum="4" Increment="0.1" FormatString="0.0" /><CheckBox Content="反转方向" IsChecked="{Binding InvertRoll}" /></StackPanel>
+            </UniformGrid>
+          </StackPanel>
+        </Expander>
+      </StackPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+      <Border Classes="card" Padding="20">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="eyebrow" Text="CALIBRATION / 实体 NS2" /><TextBlock Classes="section" Text="双摇杆校准" />
+          <TextBlock Text="{Binding StickCalibrationText}" Classes="caption" />
+          <WrapPanel><Button Margin="0,0,8,8" Content="中心 · 2 秒" Command="{Binding CalibrateStickCenterCommand}" IsEnabled="{Binding CanCalibrateSticks}" /><Button Margin="0,0,8,8" Content="完整行程 · 8 秒" Command="{Binding CalibrateStickRangeCommand}" IsEnabled="{Binding CanCalibrateSticks}" /><Button Margin="0,0,0,8" Content="重置校准" Command="{Binding ResetStickCalibrationCommand}" IsEnabled="{Binding IsConnected}" /></WrapPanel>
+          <TextBlock Classes="caption" Text="先松手采集中心，再同时将两个摇杆沿边缘转满。校准期间保持蓝牙连接；移动过大、样本不足或行程不完整时保留旧数据。" />
+          <TextBlock Classes="caption" Text="陀螺仪静置校准在手柄测试页：选择与此处相同的 Windows 手柄或 NS2 蓝牙输入；校准后的体感用于虚拟输出。" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Classes="card" Padding="20">
+        <views:DriverSettingsPanel />
+      </Border>
+    </Grid>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="实时诊断 / LIVE DIAGNOSTICS" /><TextBlock Grid.Column="1" Classes="eyebrow" Text="每秒更新" /></Grid>
+        <UniformGrid Columns="3">
+          <Border Classes="inset" Margin="0,0,12,0"><StackPanel Spacing="6"><TextBlock Classes="caption" Text="实际发送速率" /><TextBlock Text="{Binding BridgeRateText}" Classes="metric" /><TextBlock Classes="caption" Text="VIIPER 状态写入或 NS1 HID 输入报文发送次数；不代表游戏帧率。" /></StackPanel></Border>
+          <Border Classes="inset" Margin="0,0,12,0"><StackPanel Spacing="6"><TextBlock Classes="caption" Text="输入与主机反馈" /><TextBlock Text="{Binding BridgeCountsText}" Classes="mono" /><TextBlock Text="{Binding FramesText}" Classes="caption" /></StackPanel></Border>
+          <Border Classes="inset"><StackPanel Spacing="6"><TextBlock Classes="caption" Text="实体震动回传" /><TextBlock Text="{Binding BridgeRumbleText}" Classes="mono" /><TextBlock Classes="caption" Text="BLE 经 GATT，Windows 输入经 SDL；发送成功不等于已验证实际震感。" /></StackPanel></Border>
+        </UniformGrid>
+        <TextBlock Text="{Binding BridgeAddressText}" Classes="mono" /><TextBlock Classes="caption" Text="API 是本地控制通道；USB/IP 是虚拟设备挂载通道。每次启动分配空闲端口，停止只清理本应用创建的设备。" />
+        <TextBlock Text="{Binding BridgeInputText}" Classes="mono" /><TextBlock Classes="caption" Text="FD2 是实体蓝牙输入报文；距今时间用于判断数据是否新鲜。有效 / 无效计数表示解码结果，不等同于无线丢包率。" />
+        <TextBlock Text="{Binding BridgeFeedbackText}" Classes="mono" /><TextBlock Classes="caption" Text="主机反馈显示游戏最近发送的震动格式与状态；LED-only 表示仅灯光，未转换为实体震动。" />
+        <WrapPanel><Button Margin="0,0,8,8" Content="Ping 后端" Command="{Binding PingBackendCommand}" /><Button Margin="0,0,8,8" Content="设备枚举" Command="{Binding RefreshGamepadsCommand}" /><Button Margin="0,0,8,8" Content="导出诊断" Command="{Binding ExportDiagnosticsCommand}" /><Button Margin="0,0,0,8" Content="清空日志" Command="{Binding ClearDiagnosticsCommand}" /></WrapPanel>
+        <TextBlock Text="{Binding DiagnosticsResult}" Classes="caption" />
+        <TextBlock Classes="caption" Text="Windows 设备枚举：以下是 SDL 已实际发现的手柄。" /><TextBlock Text="{Binding DeviceEnumerationText}" Classes="mono" />
+        <Expander Header="本次运行日志（含源协议字段）" HorizontalAlignment="Stretch"><ScrollViewer MaxHeight="260"><ItemsControl ItemsSource="{Binding Logs}"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" Classes="mono" Margin="0,5" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer></Expander>
+        <Expander Header="模式能力与后端说明" HorizontalAlignment="Stretch"><StackPanel Spacing="8" Margin="0,12,0,0"><TextBlock Classes="caption" Text="PS5：按键、摇杆、体感、普通震动与四声道音频触觉转码；没有实体自适应扳机。" /><TextBlock Classes="caption" Text="PS5 Edge：按键、摇杆、体感、GL / GR 背键与普通震动。当前 VIIPER Edge 反馈不提供 HD 音频触觉。" /><TextBlock Classes="caption" Text="Xbox：XInput 按键、摇杆和双马达；XInput 无原生陀螺仪。NS1：按键、摇杆、体感与震动强度转码；不复现原始 HD 波形。" /><TextBlock Classes="caption" Text="后端使用随附、校验过的 VIIPER server；NS1 使用本地托管服务。源软件的实验性 libVIIPER / 嵌入式后端不在本版运行路径中。" /></StackPanel></Expander>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels" x:Class="ControllerForwardingTool.Views.DriverSettingsPanel" x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="12">
+    <TextBlock Classes="eyebrow" Text="RUNTIME / USB-IP" />
+    <TextBlock Classes="section" Text="驱动与运行环境" />
+    <TextBlock Text="{Binding DriverState}" TextWrapping="Wrap" FontWeight="SemiBold" />
+    <TextBlock Text="{Binding InstallerState}" Classes="caption" />
+    <WrapPanel IsEnabled="{Binding CanManageDriver}">
+      <Button Margin="0,0,8,8" Content="刷新状态" Command="{Binding RefreshDriverStateCommand}" />
+      <Button Margin="0,0,8,8" Classes="primary" Content="安装 / 修复" Command="{Binding InstallDriverCommand}" IsEnabled="{Binding CanManageDriver}" />
+      <Button Margin="0,0,0,8" Content="卸载 USB/IP" Command="{Binding UninstallDriverCommand}" IsEnabled="{Binding CanUninstallDriver}" Foreground="{StaticResource DangerText}" />
+    </WrapPanel>
+    <TextBlock IsVisible="{Binding !CanManageDriver}" Classes="caption" Text="模拟运行、启停或驱动操作期间，驱动管理暂不可用。请先停止模拟，并等待当前操作完成。" />
+    <TextBlock Text="{Binding DriverInstallResult}" Classes="caption" />
+    <TextBlock Classes="caption" Text="安装完成后点击刷新状态，即可启用虚拟 USB 启动按钮。" />
+    <TextBlock Classes="caption" Text="未安装或缺少原厂卸载器时禁用卸载。卸载前请先停止模拟；卸载也会影响其他使用 USB/IP 的程序。" />
+  </StackPanel>
+</UserControl>

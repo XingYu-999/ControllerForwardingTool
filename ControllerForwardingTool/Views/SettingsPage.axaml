@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:ControllerForwardingTool.ViewModels" x:Class="ControllerForwardingTool.Views.SettingsPage" x:DataType="vm:MainViewModel">
+<StackPanel Spacing="14">
+          <TextBlock Classes="title" Text="设置" />
+          <TextBlock Classes="caption" Text="管理软件启动、窗口行为、连接和本地数据。" />
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="启动行为" />
+              <CheckBox Content="登录 Windows 后启动本应用（开机自启）" IsChecked="{Binding LaunchAtLogin}" />
+              <TextBlock Classes="caption" Text="使用当前用户 Startup 文件夹的快捷方式；若安装器已启用所有用户自启，请通过安装器关闭。移动软件目录后，请重新保存设置以更新当前用户的启动路径。" />
+              <CheckBox Content="启动后恢复上次的虚拟手柄模式" IsChecked="{Binding RestoreOutput}" />
+              <TextBlock Classes="caption" Text="使用虚拟手柄页已保存的模式和输入源；驱动及输入设备就绪时自动启动输出。" />
+              <CheckBox Content="启动后收起到系统托盘" IsChecked="{Binding StartInTray}" />
+              <TextBlock Classes="caption" Text="下次启动时隐藏主窗口，点击托盘图标可重新打开。" />
+              <TextBlock Classes="section" Text="窗口行为" Margin="0,6,0,0" />
+              <CheckBox Content="最小化时收起到系统托盘" IsChecked="{Binding MinimizeToTray}" />
+              <CheckBox Content="关闭窗口时保留后台运行" IsChecked="{Binding CloseToTray}" />
+              <TextBlock Classes="caption" Text="保留后台运行时，关闭窗口不会中断手柄转发，可从托盘菜单退出。取消勾选后，关闭窗口将停止转发并退出应用。" />
+              <Button Classes="primary" Content="保存软件设置" Command="{Binding SaveApplicationSettingsCommand}" HorizontalAlignment="Left" />
+              <TextBlock Classes="caption" Text="{Binding ApplicationSettingsResult}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="配置与日志" />
+              <TextBlock Classes="muted" Text="配置、校准、手柄记录、日志和运行时文件保存在当前用户的数据目录，不写入安装目录。" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding UserDataDirectoryPath}" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="打开配置文件" Command="{Binding OpenConfigurationFileCommand}" />
+                <Button Content="打开日志目录" Command="{Binding OpenLogDirectoryCommand}" />
+              </StackPanel>
+              <TextBlock Classes="muted" Text="{Binding LogWriteStatus}" TextWrapping="Wrap" />
+              <TextBlock Classes="muted" Text="{Binding DataFilesResult}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="连接行为" /><CheckBox Content="自动搜索、连接和重连 NS2 Pro" IsChecked="{Binding AutoConnect}" />
+              <TextBlock Classes="caption" Text="此开关立即生效，仅控制本次运行。Windows 手柄始终自动发现。" />
+              <TextBlock Classes="caption" Text="虚拟输出、震动和体感参数在虚拟手柄页设置；界面使用浅色主题。" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+</UserControl>

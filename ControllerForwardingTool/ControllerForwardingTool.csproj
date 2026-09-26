@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>ControllerForwardingTool</RootNamespace>
+    <AssemblyName>ControllerForwardingTool</AssemblyName>
+    <Version>1.0.0</Version>
+    <Title>手柄转发工具</Title>
+    <AssemblyTitle>手柄转发工具</AssemblyTitle>
+    <Product>Controller Forwarding Tool</Product>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Controller Forwarding Tool contributors</Copyright>
+    <Description>手柄转发工具 / Controller Forwarding Tool</Description>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\ControllerForwardingTool.ico</ApplicationIcon>
+    <PlatformTarget>x64</PlatformTarget>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+  </PropertyGroup>
+
+  <!-- Embedded at build time; copying/publishing the binary preserves its timestamp. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="BuildTimestamp" Value="$([System.DateTime]::UtcNow.ToString('o'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ControllerForwardingTool.Checks" />
+    <Folder Include="Models\" />
+    <None Update="docs\**\*.md" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+    <Content Include="..\THIRD_PARTY_NOTICES.md" Link="THIRD_PARTY_NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\Characters\**" />
+    <Content Include="..\drivers\libusb\1.0.30\libusb-1.0.dll" Link="libusb-1.0.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\drivers\libusb\1.0.30\COPYING" Link="licenses\libusb.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\drivers\sdl3\3.4.16\SDL3.dll" Link="SDL3.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\drivers\sdl3\3.4.16\LICENSE.txt" Link="licenses\SDL3.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\drivers\viiper\**" Exclude="..\drivers\viiper\*.tar.gz" Link="drivers\viiper\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\drivers\usbip-win2\v0.9.7.7\USBip-0.9.7.7-x64.exe" Link="drivers\usbip-win2\v0.9.7.7\USBip-0.9.7.7-x64.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\drivers\usbip-win2\v0.9.7.7\LICENSE.txt" Link="drivers\usbip-win2\v0.9.7.7\LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Native NuGet assets can include PDBs even when managed symbols are disabled. -->
+  <Target Name="ExcludePublishDebugSymbols" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0" />
+  </ItemGroup>
+</Project>

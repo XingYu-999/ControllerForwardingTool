@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
+             x:Class="ControllerForwardingTool.Views.OverviewPage" x:DataType="vm:MainViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.stepNumber"><Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" /><Setter Property="CornerRadius" Value="12" /><Setter Property="Background" Value="#EDF3FD" /><Setter Property="VerticalAlignment" Value="Top" /></Style>
+    <Style Selector="Border.stepNumber TextBlock"><Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="FontWeight" Value="Bold" /><Setter Property="Foreground" Value="#2563EB" /></Style>
+    <Style Selector="Border.stepNumber.complete"><Setter Property="Background" Value="#EAF7EF" /></Style>
+    <Style Selector="Border.stepNumber.complete TextBlock"><Setter Property="Foreground" Value="#18794E" /></Style>
+    <Style Selector="Button.stepAction"><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="Padding" Value="10,8" /></Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="18">
+    <StackPanel Spacing="5">
+      <TextBlock Classes="eyebrow" Text="YOUR CONTROLLER / 连接工作台" />
+      <TextBlock Classes="title" Text="从连接到游戏" />
+      <TextBlock Classes="caption" Text="准备环境 → 选择身份 → 接入手柄 → 验证输入" />
+    </StackPanel>
+    <Border CornerRadius="12" Padding="22" BorderThickness="1" BorderBrush="#D8E6FC">
+      <Border.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#EAF2FF" Offset="0" /><GradientStop Color="#F7FAFF" Offset="1" /></LinearGradientBrush></Border.Background>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+        <StackPanel Spacing="8" VerticalAlignment="Center">
+          <TextBlock Text="{Binding VirtualModeStatus}" FontSize="24" FontWeight="Bold" Foreground="#176B37" IsVisible="{Binding IsServerRunning}" />
+          <TextBlock Text="{Binding OverviewHeading}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="#163D78" />
+          <TextBlock Text="{Binding OverviewHint}" Classes="caption" MaxWidth="750" HorizontalAlignment="Left" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+          <Button IsVisible="{Binding !IsDriverReady}" Classes="primary" Content="配置 USB/IP 驱动" Command="{Binding RefreshDriverStateCommand}" HorizontalAlignment="Stretch" IsEnabled="{Binding CanManageDriver}">
+            <Button.Flyout><Flyout Placement="BottomEdgeAlignedRight"><views:DriverSettingsPanel Width="360" Margin="4" /></Flyout></Button.Flyout>
+          </Button>
+          <Button IsVisible="{Binding IsDriverReady}" Classes="primary" Content="选择输出身份" Command="{Binding NavigateCommand}" CommandParameter="虚拟手柄" HorizontalAlignment="Stretch" />
+          <Button Content="测试 Windows 手柄" Command="{Binding OpenWindowsTesterCommand}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Classes="card" Padding="22,6">
+      <StackPanel>
+        <Grid ColumnDefinitions="40,*,150" ColumnSpacing="18" Margin="0,18">
+          <Border Classes="stepNumber" Classes.complete="{Binding IsDriverReady}"><TextBlock Text="01" /></Border>
+          <StackPanel Grid.Column="1" Spacing="7">
+            <TextBlock Classes="section" Text="准备运行环境" />
+            <TextBlock Text="{Binding DriverState}" Classes="caption" />
+            <TextBlock Text="{Binding AdapterState, StringFormat=蓝牙适配器 · {0}}" Classes="caption" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="stepAction" Content="驱动配置" Command="{Binding RefreshDriverStateCommand}" IsEnabled="{Binding CanManageDriver}">
+            <Button.Flyout><Flyout Placement="BottomEdgeAlignedRight"><views:DriverSettingsPanel Width="360" Margin="4" /></Flyout></Button.Flyout>
+          </Button>
+        </Grid>
+        <Border Height="1" Background="#EDF0F5" Margin="58,0,0,0" />
+        <Grid ColumnDefinitions="40,*,150" ColumnSpacing="18" Margin="0,18">
+          <Border Classes="stepNumber" Classes.complete="{Binding IsServerRunning}"><TextBlock Text="02" /></Border>
+          <StackPanel Grid.Column="1" Spacing="7">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <TextBlock Classes="section" Text="选择输出身份" VerticalAlignment="Center" />
+              <Border Grid.Column="1" Classes="badge" HorizontalAlignment="Left"><TextBlock Text="{Binding SelectedModeCard.Profile.Name}" Classes="caption" /></Border>
+            </Grid>
+            <TextBlock Text="{Binding VirtualState}" Classes="caption" />
+            <TextBlock Classes="caption" Text="创建虚拟 USB 后，实体手柄输入会自动接入当前身份。" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="stepAction" Content="选择 / 管理输出" Command="{Binding NavigateCommand}" CommandParameter="虚拟手柄" />
+        </Grid>
+        <Border Height="1" Background="#EDF0F5" Margin="58,0,0,0" />
+        <Grid ColumnDefinitions="40,*,150" ColumnSpacing="18" Margin="0,18">
+          <Border Classes="stepNumber" Classes.complete="{Binding IsBridgeSourceReady}"><TextBlock Text="03" /></Border>
+          <StackPanel Grid.Column="1" Spacing="7">
+            <TextBlock Classes="section" Text="接入输入手柄" />
+            <TextBlock Text="{Binding BridgeSourceStatus}" Classes="caption" />
+            <TextBlock Text="{Binding OverviewAutoConnectionText}" Classes="caption" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
+            <Button IsVisible="{Binding IsWindowsBridgeInput}" Classes="stepAction" Content="选择输入手柄" Command="{Binding NavigateCommand}" CommandParameter="虚拟手柄" />
+            <StackPanel IsVisible="{Binding !IsWindowsBridgeInput}">
+              <Button IsVisible="{Binding !IsConnected}" Classes="stepAction" Content="开始扫描" Command="{Binding ScanCommand}" IsEnabled="{Binding !IsConnecting}" />
+              <Button IsVisible="{Binding IsConnected}" Classes="stepAction" Content="查看连接" Command="{Binding NavigateCommand}" CommandParameter="NS2 Pro 连接" />
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+        <Border Height="1" Background="#EDF0F5" Margin="58,0,0,0" />
+        <Grid ColumnDefinitions="40,*,150" ColumnSpacing="18" Margin="0,18">
+          <Border Classes="stepNumber"><TextBlock Text="04" /></Border>
+          <StackPanel Grid.Column="1" Spacing="7">
+            <TextBlock Classes="section" Text="验证输入，进入游戏" />
+            <TextBlock Text="{Binding OverviewWindowsSummary}" Classes="caption" />
+            <TextBlock Classes="caption" Text="选择对应的 Windows 手柄检查输入；游戏兼容性需在目标游戏中实测。" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="stepAction" Content="打开手柄测试" Command="{Binding OpenWindowsTesterCommand}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+    <Border Classes="card" Padding="22,18" IsVisible="{Binding !IsWindowsBridgeInput}">
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="20">
+        <TextBlock Classes="section" Text="最近的 NS2 蓝牙输入" />
+        <TextBlock Grid.Column="1" Text="{Binding LastInputText}" Classes="caption" />
+        <TextBlock Grid.Row="1" Text="{Binding FramesText}" Classes="mono" />
+        <TextBlock Grid.Row="2" Text="{Binding ButtonsText, StringFormat=按键 · {0}}" Classes="caption" />
+        <Button Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Content="查看诊断日志" Command="{Binding NavigateCommand}" CommandParameter="日志" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
+             x:Class="ControllerForwardingTool.Views.TesterPage" x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4"><TextBlock Classes="eyebrow" Text="CONTROLLER LAB / 实时输入" /><TextBlock Classes="title" Text="手柄测试" /></StackPanel>
+      <Border Grid.Column="1" Classes="badge" VerticalAlignment="Center" ToolTip.Tip="{Binding TesterRateHint}"><TextBlock Text="{Binding TesterRateText}" FontSize="16" FontWeight="SemiBold" /></Border>
+    </Grid>
+    <TextBlock Text="{Binding TesterRateHint}" Classes="caption" />
+    <views:TesterDevicePicker />
+    <Grid ColumnDefinitions="5*,6*" ColumnSpacing="16">
+      <StackPanel Spacing="16">
+        <Border Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="eyebrow" Text="01 / 设备与按键" /><Border Grid.Column="1" Classes="badge"><TextBlock Text="{Binding InputHealthText}" Classes="caption" /></Border></Grid>
+            <TextBlock Text="{Binding TesterSummary}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding TesterDeviceInfo}" Classes="caption" />
+            <TextBlock Classes="caption" Text="通过上方手柄图标切换，显示布局跟随所选型号。" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="12,16">
+          <StackPanel Spacing="4">
+            <views:ControllerTesterControl Height="340" Buttons="{Binding DisplayButtons}" IsOnline="{Binding TesterIsOnline}" Layout="{Binding DisplayLayout}"
+                BatteryPercent="{Binding TesterBatteryPercent}" LeftX="{Binding TesterLeftX}" LeftY="{Binding TesterLeftY}" RightX="{Binding TesterRightX}" RightY="{Binding TesterRightY}"
+                LeftTrigger="{Binding TesterLeftTrigger}" RightTrigger="{Binding TesterRightTrigger}" />
+            <TextBlock Classes="caption" Text="按键点亮 · 扳机行程 · 布局随型号自动切换" HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section" Text="输入状态" />
+            <TextBlock Text="{Binding TesterBackend}" Classes="caption" />
+            <TextBlock Classes="caption" Text="界面约 30 Hz 刷新；该数值不是手柄硬件轮询率或端到端延迟。" />
+            <TextBlock IsVisible="{Binding IsWindowsTester}" Classes="caption" Text="NS2 USB 测试需独占设备；开始游戏前切换到概览释放连接。" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="16">
+        <Border Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="软件死区预览" /><TextBlock Grid.Column="1" Classes="eyebrow" Text="LIVE FILTER" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding DeadzoneModes}" SelectedItem="{Binding TesterDeadzoneMode}" /><TextBlock Grid.Column="1" Text="{Binding TesterDeadzone, StringFormat={}{0:F0}%}" Classes="metric" VerticalAlignment="Center" /></Grid>
+            <Slider Value="{Binding TesterDeadzone}" Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" AutomationProperties.Name="测试死区百分比" />
+            <UniformGrid Columns="4">
+              <Button Content="0% 关闭" Command="{Binding SetTesterDeadzoneCommand}" CommandParameter="0" Margin="0,0,6,0" HorizontalAlignment="Stretch" Padding="4" />
+              <Button Content="5% 紧凑" Command="{Binding SetTesterDeadzoneCommand}" CommandParameter="5" Margin="0,0,6,0" HorizontalAlignment="Stretch" Padding="4" />
+              <Button Content="10% 标准" Command="{Binding SetTesterDeadzoneCommand}" CommandParameter="10" Margin="0,0,6,0" HorizontalAlignment="Stretch" Padding="4" />
+              <Button Content="15% 较高" Command="{Binding SetTesterDeadzoneCommand}" CommandParameter="15" HorizontalAlignment="Stretch" Padding="4" />
+            </UniformGrid>
+            <TextBlock Classes="caption" Text="仅预览漂移过滤效果。实际游戏输出的死区请在虚拟手柄配置中设置。" />
+          </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <Border Classes="card" Padding="12">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="左摇杆" /><TextBlock Grid.Column="1" Classes="eyebrow" Text="L / 01" /></Grid>
+              <views:StickPlotControl Height="204" X="{Binding TesterLeftX}" Y="{Binding TesterLeftY}" FilteredX="{Binding FilteredLeftX}" FilteredY="{Binding FilteredLeftY}" Sectors="{Binding LeftSectors}" Deadzone="{Binding TesterDeadzone}" />
+              <Border Classes="inset"><TextBlock Classes="caption" Text="{Binding LeftCircularity}" /></Border>
+              <TextBlock Classes="mono" Text="{Binding TesterLeftX, StringFormat=RAW X  {0:F5}}" /><TextBlock Classes="mono" Text="{Binding TesterLeftY, StringFormat=RAW Y  {0:F5}}" />
+              <TextBlock Classes="mono" Foreground="#C65120" Text="{Binding FilteredLeftX, StringFormat=CAL X  {0:F5}}" /><TextBlock Classes="mono" Foreground="#C65120" Text="{Binding FilteredLeftY, StringFormat=CAL Y  {0:F5}}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="card" Padding="12">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="右摇杆" /><TextBlock Grid.Column="1" Classes="eyebrow" Text="R / 02" /></Grid>
+              <views:StickPlotControl Height="204" X="{Binding TesterRightX}" Y="{Binding TesterRightY}" FilteredX="{Binding FilteredRightX}" FilteredY="{Binding FilteredRightY}" Sectors="{Binding RightSectors}" Deadzone="{Binding TesterDeadzone}" />
+              <Border Classes="inset"><TextBlock Classes="caption" Text="{Binding RightCircularity}" /></Border>
+              <TextBlock Classes="mono" Text="{Binding TesterRightX, StringFormat=RAW X  {0:F5}}" /><TextBlock Classes="mono" Text="{Binding TesterRightY, StringFormat=RAW Y  {0:F5}}" />
+              <TextBlock Classes="mono" Foreground="#C65120" Text="{Binding FilteredRightX, StringFormat=CAL X  {0:F5}}" /><TextBlock Classes="mono" Foreground="#C65120" Text="{Binding FilteredRightY, StringFormat=CAL Y  {0:F5}}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><TextBlock Classes="caption" Text="轮廓记录原始行程；灰点为原始位置，橙点为过滤后位置。圆度使用已覆盖方向的最大半径估算。" /><Button Grid.Column="1" Content="重置轨迹" Command="{Binding ResetStickTraceCommand}" VerticalAlignment="Center" /></Grid>
+      </StackPanel>
+    </Grid>
+    <Grid ColumnDefinitions="5*,6*" ColumnSpacing="16">
+      <Border Grid.Column="1" Classes="card" Padding="20">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="eyebrow" Text="02 / 体感与校准" />
+          <TextBlock Classes="section" Text="三轴姿态与陀螺仪" />
+          <views:MotionCubeControl Height="190" Orientation="{Binding TesterOrientation}" HasMotion="{Binding TesterHasMotion}" />
+          <TextBlock Text="{Binding GyroStatus}" Classes="caption" />
+          <TextBlock Text="{Binding GyroCorrectedText}" Classes="mono" />
+          <TextBlock Text="{Binding TesterMotionText}" Classes="caption" />
+          <WrapPanel><Button Margin="0,0,8,6" Classes="primary" Content="校准与高级设置" Command="{Binding NavigateCommand}" CommandParameter="陀螺仪校准" /><Button Margin="0,0,0,6" Content="姿态回正" Command="{Binding RecenterMotionCommand}" IsEnabled="{Binding TesterHasMotion}" /></WrapPanel>
+          <TextBlock Classes="caption" Text="融合三轴角速度与重力；箭头标示手柄前方。偏航为相对角度。" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Padding="20">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="eyebrow" Text="03 / 震动反馈" /><TextBlock Classes="section" Text="双马达测试" />
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="caption" Text="持续时间 · 毫秒" VerticalAlignment="Center" /><NumericUpDown Grid.Column="1" Value="{Binding RumbleDuration}" Minimum="50" Maximum="10000" Increment="50" Width="150" FormatString="0" /></Grid>
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="caption" Text="低频 / 强马达" /><TextBlock Grid.Column="1" Classes="mono" Text="{Binding RumbleLow, StringFormat={}{0:F0}%}" /></Grid>
+          <Slider Value="{Binding RumbleLow}" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" />
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="caption" Text="高频 / 弱马达" /><TextBlock Grid.Column="1" Classes="mono" Text="{Binding RumbleHigh, StringFormat={}{0:F0}%}" /></Grid>
+          <Slider Value="{Binding RumbleHigh}" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" />
+          <StackPanel Orientation="Horizontal" Spacing="8"><Button Classes="testAction" Content="开始震动测试" Command="{Binding TestRumbleCommand}" IsEnabled="{Binding TesterIsOnline}" /><Button Content="停止" Command="{Binding StopRumbleCommand}" /></StackPanel>
+          <TextBlock Text="{Binding RumbleResult}" Classes="caption" /><TextBlock Classes="caption" Text="上方系统手柄经 SDL 发送振动；映射参考区直接测试所选输入源。验证模拟器振动回传时，请选择上方标注为模拟手柄的设备。" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="按键与轴 · 原始读数" /><TextBlock Grid.Column="1" Classes="eyebrow" Text="RAW INPUT" /></Grid>
+        <TextBlock Classes="caption" Text="按键 / 扳机 · 0 为松开，1 为完全按下；线性扳机显示实际行程。" />
+        <ItemsControl ItemsSource="{Binding TesterButtonValues}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:TesterValue">
+              <Border Classes="inset" Width="88" Height="82" Margin="0,0,8,8" ClipToBounds="True">
+                <Grid RowDefinitions="20,*,4" RowSpacing="6">
+                  <TextBlock Classes="caption" Text="{Binding Label}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                  <TextBlock Grid.Row="1" Classes="mono" Text="{Binding Value, StringFormat={}{0:F2}}" FontSize="14" VerticalAlignment="Center" />
+                  <views:InputLevelBar Grid.Row="2" Value="{Binding Value}" ClipToBounds="True" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Border Height="1" Background="{StaticResource Border}" />
+        <TextBlock Classes="caption" Text="轴 / 方向帽 · 保留原始精度，未应用测试死区。" />
+        <ItemsControl ItemsSource="{Binding TesterAxisValues}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:TesterValue">
+              <Border Classes="inset" Width="136" Margin="0,0,8,8" ClipToBounds="True">
+                <StackPanel Spacing="6"><TextBlock Classes="caption" Text="{Binding Label}" /><TextBlock Classes="mono" FontSize="14" Text="{Binding Value, StringFormat={}{0:F5}}" /></StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,124 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ControllerForwardingTool.App"
+             xmlns:local="using:ControllerForwardingTool"
+             Name="{x:Static local:AppIdentity.EnglishName}"
+             RequestedThemeVariant="Light">
+  <Application.DataTemplates>
+    <local:ViewLocator />
+  </Application.DataTemplates>
+  <Application.Resources>
+    <SolidColorBrush x:Key="Canvas">#F4F7FB</SolidColorBrush>
+    <SolidColorBrush x:Key="Surface">#FFFFFF</SolidColorBrush>
+    <SolidColorBrush x:Key="Border">#DFE6EF</SolidColorBrush>
+    <SolidColorBrush x:Key="ShellBorder">#E4E9F0</SolidColorBrush>
+    <SolidColorBrush x:Key="TextPrimary">#172033</SolidColorBrush>
+    <SolidColorBrush x:Key="TextSecondary">#667085</SolidColorBrush>
+    <SolidColorBrush x:Key="TextTertiary">#98A1AF</SolidColorBrush>
+    <SolidColorBrush x:Key="Accent">#1677FF</SolidColorBrush>
+    <SolidColorBrush x:Key="AccentStrong">#0958D9</SolidColorBrush>
+    <SolidColorBrush x:Key="AccentSoft">#E8F1FF</SolidColorBrush>
+    <SolidColorBrush x:Key="SuccessText">#18794E</SolidColorBrush>
+    <SolidColorBrush x:Key="SuccessSurface">#EAF7EF</SolidColorBrush>
+    <SolidColorBrush x:Key="WarningText">#9A6700</SolidColorBrush>
+    <SolidColorBrush x:Key="WarningSurface">#FFF7E6</SolidColorBrush>
+    <SolidColorBrush x:Key="DangerText">#BE123C</SolidColorBrush>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12" /><Setter Property="Foreground" Value="{StaticResource TextSecondary}" /><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="LineHeight" Value="19" />
+    </Style>
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontSize" Value="10" /><Setter Property="FontWeight" Value="Bold" /><Setter Property="Foreground" Value="#7C889A" /><Setter Property="LetterSpacing" Value="1" />
+    </Style>
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Microsoft YaHei UI" /><Setter Property="FontSize" Value="12" /><Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.metric">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" /><Setter Property="FontSize" Value="21" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#C65120" />
+    </Style>
+    <Style Selector="Border.inset"><Setter Property="Background" Value="#F5F7FA" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Padding" Value="10" /></Style>
+    <Style Selector="Border.badge"><Setter Property="Background" Value="#EDF1F6" /><Setter Property="CornerRadius" Value="5" /><Setter Property="Padding" Value="9,5" /></Style>
+    <Style Selector="Button.testAction"><Setter Property="Background" Value="#DE622D" /><Setter Property="Foreground" Value="White" /><Setter Property="BorderThickness" Value="0" /></Style>
+    <Style Selector="Button.modeCard"><Setter Property="CornerRadius" Value="12" /><Setter Property="BorderThickness" Value="2" /><Setter Property="BorderBrush" Value="#E1E7EF" /><Setter Property="ClipToBounds" Value="True" /></Style>
+    <Style Selector="Button.modeCard.selected"><Setter Property="BorderBrush" Value="#2563EB" /></Style>
+    <Style Selector="Button.modeCard:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="#85A9EE" /></Style>
+      <Style Selector="Button.modeCard:disabled /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Opacity" Value="0.7" /></Style>
+      <Style Selector="Button.modeCard.selected:disabled /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Opacity" Value="1" /><Setter Property="BorderBrush" Value="#176B37" /></Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{StaticResource Surface}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="Button.nav">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.nav.selected">
+      <Setter Property="Background" Value="{StaticResource AccentSoft}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentStrong}" />
+    </Style>
+    <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentSoft}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentStrong}" />
+    </Style>
+    <Style Selector="Button.nav:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#D6E7FF" />
+      <Setter Property="Foreground" Value="{StaticResource AccentStrong}" />
+    </Style>
+    <Style Selector="TextBlock.navIcon">
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+      <Setter Property="FontSize" Value="19" />
+      <Setter Property="Width" Value="22" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.navLabel">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource AccentStrong}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="16,6" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{StaticResource Surface}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="24" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </Application.Styles>
+</Application>

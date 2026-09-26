@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:ControllerForwardingTool"
+             x:Class="ControllerForwardingTool.Views.ChangelogPage">
+  <StackPanel Spacing="14">
+    <StackPanel Spacing="5">
+      <TextBlock Classes="title" Text="更新日志" />
+      <TextBlock Classes="muted" Text="查看当前版本的新功能、改进与修复。" />
+    </StackPanel>
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <Border Background="{StaticResource AccentSoft}" CornerRadius="6" Padding="10,5" HorizontalAlignment="Left">
+          <TextBlock Text="{x:Static app:AppIdentity.VersionLabel}" Foreground="{StaticResource AccentStrong}" FontWeight="SemiBold" />
+        </Border>
+        <TextBlock Classes="section" Text="1.0.0 · 更新内容" />
+        <TextBlock Classes="muted" Text="提供手柄连接、虚拟转发、按键映射与输入测试，并完善连接恢复、独立配置和后台运行体验。" />
+      </StackPanel>
+    </Border>
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section" Text="手柄连接与虚拟转发" />
+        <TextBlock Classes="muted" Text="• 支持 NS2 Pro 蓝牙直连，以及 Xbox、Switch Pro、PlayStation 等 Windows 手柄作为输入源。" />
+        <TextBlock Classes="muted" Text="• 提供 NS1 Pro、NS2 Pro、Xbox、PS5 和 PS5 Edge 五种虚拟 USB 输出身份，可在虚拟手柄页切换。" />
+        <TextBlock Classes="muted" Text="• 支持自动搜索与重连，保存已连接手柄的记录和自定义名称；提供可选的电脑注册开关及电量显示。" />
+      </StackPanel>
+    </Border>
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section" Text="按键映射与独立配置" />
+        <TextBlock Classes="muted" Text="• NS2 输入支持图形化按键映射，实时对照输入与输出，支持保存映射和恢复默认；未启动虚拟输出时也可编辑。" />
+        <TextBlock Classes="muted" Text="• 五种输出分别保存输入源、映射、震动倍率、推送频率、摇杆死区和体感等参数，切换输出时保留本次未保存的草稿。" />
+        <TextBlock Classes="muted" Text="• 推送频率可跟随输入源、按目标默认 USB 上限或使用固定频率；输入中断后自动归零，避免按键持续卡住。" />
+      </StackPanel>
+    </Border>
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section" Text="手柄测试与修复" />
+        <TextBlock Classes="muted" Text="• 按型号展示手柄图，提供按键、摇杆、扳机行程、输入频率和体感读数，支持摇杆与陀螺仪校准、震动测试。" />
+        <TextBlock Classes="muted" Text="• 测试列表显示已连接的 NS2 蓝牙手柄和 Windows 当前识别的设备，断开后移除；模拟映射参考区默认折叠。" />
+        <TextBlock Classes="muted" Text="• 修复 Xbox / NS1 持续震动反馈过早停止的问题，并在停止输出或断开连接时清除震动状态。" />
+      </StackPanel>
+    </Border>
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section" Text="软件设置与使用体验" />
+        <TextBlock Classes="muted" Text="• 支持登录 Windows 后自启、恢复已保存的虚拟手柄模式，以及启动、最小化或关闭窗口时收起到系统托盘。" />
+        <TextBlock Classes="muted" Text="• 配置、校准、设备记录和运行日志统一保存在用户数据目录，可从设置页打开配置文件和日志目录。" />
+        <TextBlock Classes="muted" Text="• 导航栏新增更新日志页面，支持展开与折叠查看入口；关于页面同步显示当前软件版本。" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

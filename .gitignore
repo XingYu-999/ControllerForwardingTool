@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+tools/builddeps/
+tools/sdl-build/
+tools/sdl-rebuild/
+artifacts/

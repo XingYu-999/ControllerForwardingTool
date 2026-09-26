@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:ControllerForwardingTool"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels"
+             xmlns:svg="using:Avalonia.Svg.Skia"
+             xmlns:converters="using:Avalonia.Data.Converters"
+             x:Class="ControllerForwardingTool.Views.AboutPage"
+             x:DataType="vm:AboutPageModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.detailLabel">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.detailValue">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.project">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+  </UserControl.Styles>
+  <UserControl.Resources>
+    <DataTemplate x:Key="ProjectTemplate" x:DataType="vm:OpenSourceProject">
+      <Button Classes="project" Click="OpenProject" Tag="{Binding Url}"
+              ToolTip.Tip="{Binding Url}" AutomationProperties.Name="{Binding Repository}">
+        <Grid ColumnDefinitions="56,*,Auto" ColumnSpacing="16">
+          <Border Width="56" Height="56" CornerRadius="10" Background="{StaticResource Canvas}" Padding="6">
+            <Grid>
+              <Image Source="{Binding Icon}" IsVisible="{Binding HasBitmap}" Stretch="Uniform" />
+              <svg:Svg Path="{Binding SvgPath}" IsVisible="{Binding HasSvg}" />
+              <TextBlock Text="{Binding Initials}" IsVisible="{Binding HasNoIcon}" FontWeight="SemiBold"
+                         FontSize="17" Foreground="{StaticResource AccentStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Description}" Classes="caption" />
+            <TextBlock Text="{Binding Repository}" FontSize="12" Foreground="{StaticResource AccentStrong}" TextWrapping="Wrap" />
+          </StackPanel>
+          <TextBlock Grid.Column="2" Text="↗" FontSize="20" Foreground="{StaticResource AccentStrong}" VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+  <StackPanel Spacing="20" MaxWidth="1120" HorizontalAlignment="Stretch">
+    <Border Classes="card" Padding="36,40" CornerRadius="14">
+      <Grid ColumnDefinitions="168,*" ColumnSpacing="40" MinHeight="260">
+        <svg:Svg Path="avares://ControllerForwardingTool/Assets/ControllerForwardingTool.svg"
+                 Width="160" Height="160" VerticalAlignment="Center" AutomationProperties.Name="手柄转发工具软件图标" />
+        <StackPanel Grid.Column="1" Spacing="22" VerticalAlignment="Center">
+          <StackPanel Spacing="5">
+            <TextBlock Text="{x:Static app:AppIdentity.ChineseName}" FontSize="30" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+            <TextBlock Text="{x:Static app:AppIdentity.EnglishName}" Classes="muted" />
+          </StackPanel>
+          <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14" ColumnSpacing="16">
+            <TextBlock Text="版本号" Classes="detailLabel" />
+            <TextBlock Grid.Column="1" Text="{x:Static app:AppIdentity.Version}" Classes="detailValue" />
+            <TextBlock Grid.Row="1" Text="构建时间" Classes="detailLabel" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Static app:AppIdentity.BuildTime}" Classes="detailValue" />
+            <TextBlock Grid.Row="2" Text="主要框架" Classes="detailLabel" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{x:Static app:AppIdentity.FrameworkLabel}" Classes="detailValue" />
+            <TextBlock Grid.Row="3" Text="源代码" Classes="detailLabel" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{x:Static app:AppIdentity.SourceCodeUrl}" Classes="detailValue" />
+            <TextBlock Grid.Row="4" Text="开源协议" Classes="detailLabel" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="MIT License" Classes="detailValue" />
+          </Grid>
+          <StackPanel Spacing="6">
+            <TextBlock Text="可自由下载、使用、修改、分发及商用，无需通知作者或另行征得许可。" Classes="muted" />
+            <TextBlock Text="请保留版权与许可声明。第三方组件及素材遵循各自许可证。完整 MIT 条款见随附 LICENSE 文件。" Classes="caption" />
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Classes="card" Padding="24">
+      <StackPanel Spacing="14">
+        <StackPanel Spacing="6">
+          <TextBlock Text="开源项目与致谢" Classes="section" />
+          <TextBlock Text="感谢以下项目提供的框架、组件与协议研究。点击条目访问 GitHub 仓库。" Classes="muted" />
+        </StackPanel>
+        <TextBlock Text="{Binding LinkStatus}" Foreground="{StaticResource DangerText}" TextWrapping="Wrap" IsVisible="{Binding LinkStatus, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Text="框架与组件" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" />
+        <ItemsControl ItemsSource="{Binding Libraries}" ItemTemplate="{StaticResource ProjectTemplate}" />
+        <TextBlock Text="实现与协议参考" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" />
+        <ItemsControl ItemsSource="{Binding References}" ItemTemplate="{StaticResource ProjectTemplate}" />
+        <TextBlock Text="第三方许可证及使用说明随软件附于 THIRD_PARTY_NOTICES.md、licenses 与 drivers 目录。项目图标归各自所有者所有。" Classes="caption" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

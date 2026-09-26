@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
+             x:Class="ControllerForwardingTool.Views.MappingPage" x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="16">
+    <TextBlock Classes="title" Text="按键映射" />
+    <TextBlock Classes="section" Text="{Binding RouteConfigurationTitle}" />
+    <TextBlock Classes="caption" Text="映射仅属于此输出线路。可在虚拟手柄页切换线路；恢复默认也只影响当前线路。" />
+    <TextBlock Classes="caption" Text="{Binding MappingEditHint}" TextWrapping="Wrap" />
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+      <Border Classes="card" Padding="16">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="eyebrow" Text="01 / 源手柄" />
+          <TextBlock Classes="section" Text="{Binding MappingSourceName}" TextWrapping="Wrap" />
+          <views:ControllerTesterControl Height="310" Layout="{Binding MappingSource.Layout}" IsOnline="{Binding MappingSource.Online}"
+             Buttons="{Binding MappingSource.Buttons}" LeftX="{Binding MappingSource.LeftX}" LeftY="{Binding MappingSource.LeftY}"
+             RightX="{Binding MappingSource.RightX}" RightY="{Binding MappingSource.RightY}" LeftTrigger="{Binding MappingSource.LeftTrigger}" RightTrigger="{Binding MappingSource.RightTrigger}"
+             SelectButtonCommand="{Binding SelectMappingButtonCommand}" SelectedButton="{Binding SelectedSourceButton}" Cursor="Hand" AutomationProperties.Name="源手柄，点击按键选择映射项" />
+          <TextBlock Classes="caption" Text="原始按键与摇杆 · 点击要修改的按键" HorizontalAlignment="Center" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Classes="card" Padding="16">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="eyebrow" Text="02 / 映射手柄" />
+          <TextBlock Classes="section" Text="{Binding MappingOutputName}" TextWrapping="Wrap" />
+          <views:ControllerTesterControl Height="310" Layout="{Binding MappingOutput.Layout}" IsOnline="{Binding MappingOutput.Online}"
+             Buttons="{Binding MappingOutput.Buttons}" LeftX="{Binding MappingOutput.LeftX}" LeftY="{Binding MappingOutput.LeftY}"
+             RightX="{Binding MappingOutput.RightX}" RightY="{Binding MappingOutput.RightY}" LeftTrigger="{Binding MappingOutput.LeftTrigger}" RightTrigger="{Binding MappingOutput.RightTrigger}"
+             SelectButtonCommand="{Binding AssignMappingTargetCommand}" SelectedButton="{Binding SelectedOutputButton}" Cursor="Hand" AutomationProperties.Name="映射手柄，点击按键指定输出目标" />
+          <TextBlock Classes="caption" Text="已应用的输出状态 · 点击目标按键进行配置" HorizontalAlignment="Center" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="section" Text="配置选中的按键" />
+          <TextBlock Grid.Column="1" Text="● 未应用" IsVisible="{Binding HasMappingChanges}" Foreground="{StaticResource WarningText}" />
+        </Grid>
+        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="20" IsEnabled="{Binding CanMapSource}">
+          <StackPanel Spacing="6"><TextBlock Classes="caption" Text="源手柄按键" /><ComboBox ItemsSource="{Binding ButtonMappings}" SelectedItem="{Binding SelectedMapping}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择源手柄按键" /></StackPanel>
+          <TextBlock Grid.Column="1" Text="→" FontSize="26" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+          <StackPanel Grid.Column="2" Spacing="6"><TextBlock Classes="caption" Text="映射到" /><ComboBox ItemsSource="{Binding SelectedMapping.Choices}" SelectedItem="{Binding SelectedMapping.Target, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择映射目标按键" /></StackPanel>
+        </Grid>
+        <TextBlock Classes="caption" Text="默认：左背键 GL → 左摇杆按下 L3；右背键 GR → 右摇杆按下 R3。目标按键名称随输出型号变化。" TextWrapping="Wrap" />
+        <WrapPanel IsEnabled="{Binding CanMapSource}">
+          <Button Classes="primary" Content="应用并保存" Command="{Binding SaveButtonMappingsCommand}" Margin="0,0,10,6" />
+          <Button Content="恢复默认并保存" Command="{Binding ResetButtonMappingsCommand}" Margin="0,0,10,6" />
+        </WrapPanel>
+        <TextBlock Text="{Binding ButtonMappingStatus}" Classes="caption" TextWrapping="Wrap" />
+        <Expander Header="查看全部映射" HorizontalAlignment="Stretch">
+          <ItemsControl ItemsSource="{Binding ButtonMappings}" Margin="0,10,0,0">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ButtonMappingRow">
+              <Border Classes="inset" Margin="0,0,10,8" Padding="10"><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontWeight="SemiBold" /><TextBlock Text="{Binding Target, StringFormat=→ {0}}" TextWrapping="Wrap" /></StackPanel></Border>
+            </DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Expander>
+      </StackPanel>
+    </Border>
+    <TextBlock Classes="caption" Text="右侧显示本应用准备输出的状态；确认 Windows 或游戏实际收到的输入，请在手柄测试页选择 Windows 手柄。断开输入后两侧自动归零。" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

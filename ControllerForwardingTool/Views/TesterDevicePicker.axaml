@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ControllerForwardingTool.ViewModels"
+             x:Class="ControllerForwardingTool.Views.TesterDevicePicker" x:DataType="vm:MainViewModel">
+  <UserControl.Resources>
+    <DataTemplate x:Key="DeviceCard" x:DataType="vm:TesterDeviceCard">
+      <Button Classes="modeCard" Classes.selected="{Binding IsSelected}" Command="{Binding SelectCommand}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10" Margin="0,0,8,8"
+              AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Detail}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding KindLabel}" FontSize="11" Foreground="{StaticResource AccentStrong}" />
+          <Image Source="{Binding Image}" Height="68" Stretch="Uniform" />
+          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding Detail}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock Text="✓ 正在查看" IsVisible="{Binding IsSelected}" Foreground="{StaticResource AccentStrong}" FontSize="11" />
+        </StackPanel>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+  <StackPanel Spacing="12">
+  <Border Classes="card" Padding="18">
+    <StackPanel Spacing="10">
+      <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="手柄源" /><Button Grid.Column="1" Content="刷新设备" Command="{Binding RefreshGamepadsCommand}" /></Grid>
+      <TextBlock Classes="caption" Text="当前计算机已连接的手柄，包括 NS、Xbox、PS 和模拟设备。点击图标查看实际输入。" TextWrapping="Wrap" />
+      <Border IsVisible="{Binding HasNoTesterDevices}" Padding="20" Background="#F4F7FC" CornerRadius="8">
+        <StackPanel Spacing="6">
+          <TextBlock Text="未发现已连接的手柄" FontWeight="SemiBold" />
+          <TextBlock Classes="caption" Text="连接 USB 或蓝牙手柄后会自动显示，也可以点击刷新设备。" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+      <ItemsControl IsVisible="{Binding HasTesterDevices}" ItemsSource="{Binding TesterSourceCards}" ItemTemplate="{StaticResource DeviceCard}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="210" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      </ItemsControl>
+      <TextBlock Classes="caption" Text="本应用生成的设备标注为“模拟手柄”；其他系统设备的实体 / 模拟来源未确认。" TextWrapping="Wrap" IsVisible="{Binding HasTesterDevices}" />
+    </StackPanel>
+  </Border>
+  <Border Classes="card" Padding="18">
+    <Expander IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <Expander.Header><StackPanel Spacing="4"><TextBlock Classes="section" Text="模拟手柄 · 映射参考" /><TextBlock Classes="caption" Text="展开查看上次保存的映射效果" /></StackPanel></Expander.Header>
+      <StackPanel Spacing="12" Margin="0,12,0,0">
+      <TextBlock Classes="caption" Text="以下是模拟后的参考视图，使用上次保存的映射配置。点击不会启动模拟器；实际已连接的模拟手柄显示在上方。" TextWrapping="Wrap" />
+      <ItemsControl ItemsSource="{Binding TesterVirtualCards}" ItemTemplate="{StaticResource DeviceCard}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="180" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      </ItemsControl>
+      </StackPanel>
+    </Expander>
+  </Border>
+  </StackPanel>
+</UserControl>
