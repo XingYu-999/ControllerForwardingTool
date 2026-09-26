@@ -1,8 +1,31 @@
+# .NET build output (including helper/check projects under tools/)
 **/bin/
 **/obj/
+
+# Visual Studio / Rider local state
 .vs/
+.idea/
 *.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test results and diagnostic build logs
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+*.binlog
+
+# Generated releases and installer output
+artifacts/
+[Pp]ublish/
+/ControllerForwardingTool/InnoSetup/Output/
+
+# Downloaded/extracted native build dependencies
 tools/builddeps/
 tools/sdl-build/
 tools/sdl-rebuild/
-artifacts/
+
+# Keep drivers/ binaries, source archives and license files tracked:
+# the project and tools/package-release.ps1 require them for builds/releases.
