@@ -10,12 +10,25 @@ namespace ControllerForwardingTool.ViewModels;
 
 public partial class MainViewModel
 {
+    private IImage ControllerImage(ControllerLayout layout) => ModeCards.First(x => x.Profile.Mode == (layout switch
+    {
+        ControllerLayout.Switch2Pro => VirtualControllerMode.Ns2Pro,
+        ControllerLayout.SwitchPro => VirtualControllerMode.Ns1Pro,
+        ControllerLayout.DualSenseEdge => VirtualControllerMode.DualSenseEdge,
+        ControllerLayout.DualSense or ControllerLayout.DualShock or ControllerLayout.DualShock3 => VirtualControllerMode.DualSense,
+        _ => VirtualControllerMode.Xbox360
+    })).Image;
+
     public ObservableCollection<TesterDeviceCard> TesterSourceCards { get; } = [];
     public ObservableCollection<TesterDeviceCard> TesterVirtualCards { get; } = [];
     public VirtualControllerMode TesterPreviewMode { get; private set; } = VirtualControllerMode.Ns1Pro;
     public bool IsMappedTester => SelectedTesterSource == TesterSources[2];
     public bool HasTesterDevices => TesterSourceCards.Count > 0;
     public bool HasNoTesterDevices => !HasTesterDevices;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTesterSelectionRumbleResult))]
+    public partial string TesterSelectionRumbleResult { get; set; } = "";
+    public bool HasTesterSelectionRumbleResult => TesterSelectionRumbleResult.Length > 0;
 
     private void SyncTesterCards(IReadOnlyList<GamepadDevice> devices)
     {
@@ -23,19 +36,14 @@ public partial class MainViewModel
         foreach (var card in TesterSourceCards.Where(c => c.Key == "ble" ? !IsConnected : devices.All(d => c.Device?.Id != d.Id)).ToArray())
             TesterSourceCards.Remove(card);
         if (IsConnected && TesterSourceCards.All(c => c.Key != "ble"))
-            TesterSourceCards.Insert(0, new("ble", "NS2 Pro", Icon(VirtualControllerMode.Ns2Pro), SelectTesterCard)
+            TesterSourceCards.Insert(0, new("ble", "NS2 Pro", Icon(VirtualControllerMode.Ns2Pro), SelectTesterSourceCardAsync)
                 { KindLabel = "实体手柄", Detail = "蓝牙直连 · 已连接" });
         foreach (var device in devices)
         {
             var card = TesterSourceCards.FirstOrDefault(c => c.Device?.Id == device.Id);
             if (card is null)
             {
-                var mode = device.Layout switch {
-                    ControllerLayout.Switch2Pro => VirtualControllerMode.Ns2Pro, ControllerLayout.SwitchPro => VirtualControllerMode.Ns1Pro,
-                    ControllerLayout.DualSenseEdge => VirtualControllerMode.DualSenseEdge,
-                    ControllerLayout.DualSense or ControllerLayout.DualShock or ControllerLayout.DualShock3 => VirtualControllerMode.DualSense,
-                    _ => VirtualControllerMode.Xbox360 };
-                card = new($"device:{device.Id}", device.Name, Icon(mode), SelectTesterCard) { Device = device };
+                card = new($"device:{device.Id}", device.Name, ControllerImage(device.Layout), SelectTesterSourceCardAsync) { Device = device };
                 TesterSourceCards.Add(card);
             }
             card.Device = device;
@@ -58,8 +66,40 @@ public partial class MainViewModel
         UpdateTesterCardSelection();
     }
 
+    private async Task SelectTesterSourceCardAsync(TesterDeviceCard card)
+    {
+        if (closing || !TesterSourceCards.Contains(card)) return;
+        SelectTesterCard(card);
+        var result = await IdentifyControllerAsync(card);
+        if (card.IsSelected) TesterSelectionRumbleResult = RumbleResult = result;
+    }
+
+    // Shared by the input picker and tester: SDL owns the USB pulse duration;
+    // the BLE writer owns its pulse deadline, independently of the UI refresh loop.
+    private async Task<string> IdentifyControllerAsync(TesterDeviceCard card)
+    {
+        try
+        {
+            rumbleTestCancellation?.Cancel();
+            // Wait for an earlier manual test's final stop before sending a new pulse.
+            if (TestRumbleCommand.ExecutionTask is { IsCompleted: false } previousTest) await previousTest;
+            if (closing || !card.IsSelected) return "";
+            if (card.Device is { } pad)
+                return await gamepads.RumbleAsync(pad, RumbleSettings.Create(25, 25, 250));
+            if (card.Key == "ble" && IsConnected && transport.CanRumble)
+            {
+                transport.QueueRumble(Pro2OutputPacketMapper.BuildOrdinaryPacket(64, 64, "input-identify") with
+                    { PlaybackDuration = TimeSpan.FromMilliseconds(250), GainOverride = 1 });
+                return "已发送 250 ms 识别振动 · 强度 25%";
+            }
+            return "已选择手柄；该设备没有可用的振动通道";
+        }
+        catch (TimeoutException) { return "已选择手柄；识别振动发送超时"; }
+    }
+
     private void SelectTesterCard(TesterDeviceCard card)
     {
+        TesterSelectionRumbleResult = "";
         TesterSkin = "自动识别";
         if (card.Device is { } device)
         { SelectedWindowsGamepad = device; SelectedTesterSource = TesterSources[0]; }
@@ -97,7 +137,8 @@ public partial class MainViewModel
         var buttons = Enum.GetValues<ControllerButtons>().Where(b => b != ControllerButtons.None).ToArray();
         SetValues(TesterButtonValues, buttons.Select(b => (TesterButtons & b) != 0 ? 1.0 : 0.0).ToArray(), "B", buttons.Select(b => b.ToString()).ToArray());
         SetValues(TesterAxisValues, [TesterLeftX, TesterLeftY, TesterRightX, TesterRightY], "轴 ");
-        UpdateMotion(CurrentCalibration, TesterPreviewMode != VirtualControllerMode.Xbox360 &&
+        if (IsKeyboardMouseInput || UsesHybridMouseGyro) UpdateKeyboardMouseMotion(state);
+        else UpdateMotion(CurrentCalibration, TesterPreviewMode != VirtualControllerMode.Xbox360 &&
             (!IsWindowsBridgeInput || SelectedBridgeGamepad is { } pad && gamepads.Read(pad) is { Gyro: not null, Accel: not null }));
     }
 }
@@ -115,4 +156,6 @@ public partial class TesterDeviceCard : ObservableObject
     [ObservableProperty] public partial bool IsSelected { get; set; }
     public TesterDeviceCard(string key, string name, IImage image, Action<TesterDeviceCard> select)
     { Key = key; Name = name; Image = image; SelectCommand = new RelayCommand(() => select(this)); }
+    public TesterDeviceCard(string key, string name, IImage image, Func<TesterDeviceCard, Task> select)
+    { Key = key; Name = name; Image = image; SelectCommand = new AsyncRelayCommand(() => select(this)); }
 }

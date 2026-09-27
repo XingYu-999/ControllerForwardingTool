@@ -8,6 +8,9 @@ public sealed record Pro2OutputPacket(byte[] Report, string Source, bool Active,
     // Ordinary feedback is a motor state until the host sends a new state/stop.
     // Streamed HD/audio frames must never be held and replayed as that state.
     public bool SustainUntilStopped { get; init; }
+    // Identification pulses expire in the BLE writer and bypass the route's feedback gain.
+    public TimeSpan? PlaybackDuration { get; init; }
+    public double? GainOverride { get; init; }
 }
 
 public static class Pro2OutputPacketMapper

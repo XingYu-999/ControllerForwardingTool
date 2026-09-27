@@ -49,12 +49,12 @@ public sealed class Ns2BleTransport : IDisposable
     private CancellationTokenSource? rumbleLifetime;
     private Task? rumbleWriter;
     private Pro2OutputPacket? pendingRumble;
-    private double rumbleGain = 1;
+    private double rumbleGain = OutputRouteOptions.DefaultRumbleGain;
     private long rumbleWrites, rumbleFailures;
     public bool CanRumble => rumble is not null && rumbleLifetime is { IsCancellationRequested: false } && rumbleWriter is { IsCompleted: false };
     public long RumbleWrites => Interlocked.Read(ref rumbleWrites);
     public long RumbleFailures => Interlocked.Read(ref rumbleFailures);
-    public double RumbleGain { get => Volatile.Read(ref rumbleGain); set => Volatile.Write(ref rumbleGain, double.IsFinite(value) ? Math.Clamp(value, 0, 3) : 1); }
+    public double RumbleGain { get => Volatile.Read(ref rumbleGain); set => Volatile.Write(ref rumbleGain, double.IsFinite(value) ? Math.Clamp(value, 0, 3) : OutputRouteOptions.DefaultRumbleGain); }
     public void QueueRumble(Pro2OutputPacket packet)
     {
         if (CanRumble) Interlocked.Exchange(ref pendingRumble, packet with { Report = packet.Report.ToArray() });
@@ -498,7 +498,7 @@ public sealed class Ns2BleTransport : IDisposable
                 var packet = playback.Next(Interlocked.Exchange(ref pendingRumble, null), clock.Elapsed);
                 if (packet is null) continue;
                 byte[] data = new byte[Pro2BleRumblePacketEncoder.BlePacketSize];
-                if (!Pro2BleRumblePacketEncoder.TryEncodeRaw02(packet.Report, sequence++, data, out _, out _, RumbleGain)) continue;
+                if (!Pro2BleRumblePacketEncoder.TryEncodeRaw02(packet.Report, sequence++, data, out _, out _, packet.GainOverride ?? RumbleGain)) continue;
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
                 timeout.CancelAfter(TimeSpan.FromSeconds(2));
                 var option = (target.CharacteristicProperties & GattCharacteristicProperties.WriteWithoutResponse) != 0

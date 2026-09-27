@@ -1,5 +1,7 @@
 # ControllerForwardingTool 安装包
 
+当前应用版本：**1.0.1**。版本变化见[更新日志](../../CHANGELOG.md)，构建与验证见[发布说明](../../docs/04_BUILD_AND_VALIDATION.md)。安装器默认从发布的 EXE 读取文件版本 `1.0.1.0`，请先重新发布本版程序。
+
 `ControllerForwardingTool.iss` 为手柄转发工具打包，首次安装提供安装范围选择：
 
 | 安装范围 | 默认安装位置 | 安装权限 |
@@ -72,7 +74,7 @@ Startup 自启无法保证启动需要提权的程序，因此不能同时选择
 | 自动保存的运行日志与新导出诊断 | `%LOCALAPPDATA%\ControllerForwardingTool\logs` |
 | 应用及 VIIPER、USB/IP 子进程的运行工作目录 | `%LOCALAPPDATA%\ControllerForwardingTool\runtime` |
 
-设置页提供「打开配置文件」「打开日志目录」。配置尚不存在时，打开操作先保存当前配置；已存在时不覆盖，使用系统关联程序打开，没有关联时尝试记事本。手动编辑前退出程序，下次启动读取变更。
+设置页提供「打开目录」，打开当前用户的数据目录，其中包含配置文件和 `logs` 日志子目录。1.0.1 的键鼠、摇杆映射与补充开关也按线路保存在该配置中；升级保留已有设置，首次运行预设见[配置说明](../../docs/03_CONFIGURATION_AND_LIFECYCLE.md)。手动编辑前退出程序，下次启动读取变更。
 
 运行日志按会话生成，单文件约 5 MB，最多保留 10 个 `app-*.log`；手动导出的 `diagnostics-*.txt` 不随轮转删除。旧版 `%LOCALAPPDATA%\ControllerForwardingTool\diagnostics` 目录保留，不自动搬迁。日志写入失败不改写安装目录，设置页显示错误。
 

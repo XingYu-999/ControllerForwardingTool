@@ -1,62 +1,125 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
              x:Class="ControllerForwardingTool.Views.MappingPage" x:DataType="vm:MainViewModel">
-  <StackPanel Spacing="16">
-    <TextBlock Classes="title" Text="按键映射" />
-    <TextBlock Classes="section" Text="{Binding RouteConfigurationTitle}" />
-    <TextBlock Classes="caption" Text="映射仅属于此输出线路。可在虚拟手柄页切换线路；恢复默认也只影响当前线路。" />
-    <TextBlock Classes="caption" Text="{Binding MappingEditHint}" TextWrapping="Wrap" />
-    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-      <Border Classes="card" Padding="16">
-        <StackPanel Spacing="8">
-          <TextBlock Classes="eyebrow" Text="01 / 源手柄" />
-          <TextBlock Classes="section" Text="{Binding MappingSourceName}" TextWrapping="Wrap" />
-          <views:ControllerTesterControl Height="310" Layout="{Binding MappingSource.Layout}" IsOnline="{Binding MappingSource.Online}"
-             Buttons="{Binding MappingSource.Buttons}" LeftX="{Binding MappingSource.LeftX}" LeftY="{Binding MappingSource.LeftY}"
-             RightX="{Binding MappingSource.RightX}" RightY="{Binding MappingSource.RightY}" LeftTrigger="{Binding MappingSource.LeftTrigger}" RightTrigger="{Binding MappingSource.RightTrigger}"
-             SelectButtonCommand="{Binding SelectMappingButtonCommand}" SelectedButton="{Binding SelectedSourceButton}" Cursor="Hand" AutomationProperties.Name="源手柄，点击按键选择映射项" />
-          <TextBlock Classes="caption" Text="原始按键与摇杆 · 点击要修改的按键" HorizontalAlignment="Center" />
-        </StackPanel>
-      </Border>
-      <Border Grid.Column="1" Classes="card" Padding="16">
-        <StackPanel Spacing="8">
-          <TextBlock Classes="eyebrow" Text="02 / 映射手柄" />
-          <TextBlock Classes="section" Text="{Binding MappingOutputName}" TextWrapping="Wrap" />
-          <views:ControllerTesterControl Height="310" Layout="{Binding MappingOutput.Layout}" IsOnline="{Binding MappingOutput.Online}"
-             Buttons="{Binding MappingOutput.Buttons}" LeftX="{Binding MappingOutput.LeftX}" LeftY="{Binding MappingOutput.LeftY}"
-             RightX="{Binding MappingOutput.RightX}" RightY="{Binding MappingOutput.RightY}" LeftTrigger="{Binding MappingOutput.LeftTrigger}" RightTrigger="{Binding MappingOutput.RightTrigger}"
-             SelectButtonCommand="{Binding AssignMappingTargetCommand}" SelectedButton="{Binding SelectedOutputButton}" Cursor="Hand" AutomationProperties.Name="映射手柄，点击按键指定输出目标" />
-          <TextBlock Classes="caption" Text="已应用的输出状态 · 点击目标按键进行配置" HorizontalAlignment="Center" />
-        </StackPanel>
-      </Border>
-    </Grid>
-    <Border Classes="card" Padding="20">
-      <StackPanel Spacing="14">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Classes="section" Text="配置选中的按键" />
-          <TextBlock Grid.Column="1" Text="● 未应用" IsVisible="{Binding HasMappingChanges}" Foreground="{StaticResource WarningText}" />
-        </Grid>
-        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="20" IsEnabled="{Binding CanMapSource}">
-          <StackPanel Spacing="6"><TextBlock Classes="caption" Text="源手柄按键" /><ComboBox ItemsSource="{Binding ButtonMappings}" SelectedItem="{Binding SelectedMapping}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择源手柄按键" /></StackPanel>
-          <TextBlock Grid.Column="1" Text="→" FontSize="26" VerticalAlignment="Bottom" Margin="0,0,0,6" />
-          <StackPanel Grid.Column="2" Spacing="6"><TextBlock Classes="caption" Text="映射到" /><ComboBox ItemsSource="{Binding SelectedMapping.Choices}" SelectedItem="{Binding SelectedMapping.Target, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择映射目标按键" /></StackPanel>
-        </Grid>
-        <TextBlock Classes="caption" Text="默认：左背键 GL → 左摇杆按下 L3；右背键 GR → 右摇杆按下 R3。目标按键名称随输出型号变化。" TextWrapping="Wrap" />
-        <WrapPanel IsEnabled="{Binding CanMapSource}">
-          <Button Classes="primary" Content="应用并保存" Command="{Binding SaveButtonMappingsCommand}" Margin="0,0,10,6" />
-          <Button Content="恢复默认并保存" Command="{Binding ResetButtonMappingsCommand}" Margin="0,0,10,6" />
-        </WrapPanel>
-        <TextBlock Text="{Binding ButtonMappingStatus}" Classes="caption" TextWrapping="Wrap" />
-        <Expander Header="查看全部映射" HorizontalAlignment="Stretch">
-          <ItemsControl ItemsSource="{Binding ButtonMappings}" Margin="0,10,0,0">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ButtonMappingRow">
-              <Border Classes="inset" Margin="0,0,10,8" Padding="10"><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontWeight="SemiBold" /><TextBlock Text="{Binding Target, StringFormat=→ {0}}" TextWrapping="Wrap" /></StackPanel></Border>
-            </DataTemplate></ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </Expander>
+  <StackPanel Spacing="12">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="title" Text="按键映射" />
+        <TextBlock Classes="caption" Text="{Binding RouteConfigurationTitle}" />
       </StackPanel>
-    </Border>
-    <TextBlock Classes="caption" Text="右侧显示本应用准备输出的状态；确认 Windows 或游戏实际收到的输入，请在手柄测试页选择 Windows 手柄。断开输入后两侧自动归零。" TextWrapping="Wrap" />
+      <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding CanMapSource}">
+          <Button Classes="primary" Content="应用并保存" Command="{Binding SaveButtonMappingsCommand}" />
+          <Button Content="恢复默认并保存" Command="{Binding ResetButtonMappingsCommand}" />
+        </StackPanel>
+        <TextBlock Text="● 未保存 · 当前配置可直接测试" IsVisible="{Binding HasMappingChanges}" Foreground="{StaticResource WarningText}" FontSize="12" HorizontalAlignment="Right" />
+      </StackPanel>
+    </Grid>
+    <TextBlock Classes="caption" Text="{Binding ButtonMappingStatus}" TextWrapping="Wrap" />
+    <TabControl x:Name="MappingViews" SelectedIndex="0" Padding="0" Background="Transparent">
+      <TabItem Header="手柄状态" FontSize="15">
+        <StackPanel x:Name="MappingStateView" Spacing="12" Margin="0,12,0,0">
+          <Grid x:Name="MappingComparisonGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+            <Border Classes="card" Padding="16" Grid.ColumnSpan="{Binding MappingSourceColumnSpan}">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="eyebrow" Text="源输入" />
+                <TextBlock x:Name="SourceTitle" Classes="section" Text="{Binding MappingSourceName}" TextWrapping="Wrap" />
+                <views:KeyboardMouseControl MaxHeight="280" IsVisible="{Binding IsKeyboardMouseInput}" PressedKeys="{Binding MappingPressedKeys}" MouseDelta="{Binding MappingMouseDelta}" SelectedKey="{Binding MappingSelectedKey}" SelectedKeys="{Binding MappingSelectedKeys}" SelectKeyCommand="{Binding SelectMappingKeyCommand}" Cursor="Hand" />
+                <TextBlock IsVisible="{Binding IsKeyboardMouseInput}" Text="{Binding MappingKeyboardStatus}" Classes="caption" HorizontalAlignment="Center" />
+                <Grid IsVisible="{Binding IsKeyboardMouseInput}" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,8,0,0">
+                  <TextBlock Text="鼠标模拟为" VerticalAlignment="Center" />
+                  <ComboBox x:Name="PrimaryMouseMode" Grid.Column="1" ItemsSource="{Binding MouseModes}" SelectedItem="{Binding SelectedMouseMode}" HorizontalAlignment="Stretch" AutomationProperties.Name="鼠标模拟模式" />
+                </Grid>
+                <TextBlock IsVisible="{Binding IsKeyboardMouseInput}" Classes="caption" Text="鼠标默认控制右摇杆，也可选择陀螺仪；Xbox 输出不支持体感。F8 开始转发，Esc / F8 暂停。" />
+                <views:ControllerTesterControl IsVisible="{Binding !IsKeyboardMouseInput}" Height="280" Layout="{Binding MappingSource.Layout}" IsOnline="{Binding MappingSource.Online}"
+                   Buttons="{Binding MappingSource.Buttons}" LeftX="{Binding MappingSource.LeftX}" LeftY="{Binding MappingSource.LeftY}"
+                   RightX="{Binding MappingSource.RightX}" RightY="{Binding MappingSource.RightY}" LeftTrigger="{Binding MappingSource.LeftTrigger}" RightTrigger="{Binding MappingSource.RightTrigger}"
+                   SelectButtonCommand="{Binding SelectMappingButtonCommand}" SelectedButton="{Binding SelectedSourceButton}" Cursor="Hand" AutomationProperties.Name="源手柄，点击按键选择映射项" />
+                <TextBlock Classes="caption" Text="原始输入 · 橙色为按下，蓝色为选中来源" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="{Binding MappingOutputColumn}" Grid.Row="{Binding MappingOutputRow}" Grid.ColumnSpan="{Binding MappingSourceColumnSpan}" Classes="card" Padding="16">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="eyebrow" Text="映射输出" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                  <TextBlock x:Name="OutputTitle" Classes="section" Text="{Binding MappingOutputName}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Content="快速配置" Click="OnQuickMappingClick" IsEnabled="{Binding IsMappingAvailable}" />
+                </Grid>
+                <views:ControllerTesterControl x:Name="OutputMappingDiagram" Focusable="True" Height="280" Layout="{Binding MappingOutput.Layout}" IsOnline="{Binding MappingOutput.Online}"
+                   Buttons="{Binding MappingOutput.Buttons}" LeftX="{Binding MappingOutput.LeftX}" LeftY="{Binding MappingOutput.LeftY}"
+                   RightX="{Binding MappingOutput.RightX}" RightY="{Binding MappingOutput.RightY}" LeftTrigger="{Binding MappingOutput.LeftTrigger}" RightTrigger="{Binding MappingOutput.RightTrigger}"
+                   SelectedButton="{Binding HighlightedMappingTarget}" SelectButtonCommand="{Binding SelectOutputMappingButtonCommand}" Cursor="Hand" AutomationProperties.Name="映射预览，单击查看来源，双击按键单独配置" ToolTip.Tip="单击查看输入源 · 双击仅配置此按键 · Esc 取消" />
+                <TextBlock Text="单击查看来源 · 双击配置此按键" Foreground="{StaticResource AccentStrong}" FontSize="12" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <Border Classes="card" Padding="16">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="16" IsEnabled="{Binding CanMapSource}">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="caption" Text="源输入按键" />
+                  <ComboBox x:Name="SourceMappingCombo" ItemsSource="{Binding ButtonMappings}" SelectedItem="{Binding SelectedMapping}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择源输入按键">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:ButtonMappingRow"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="→" FontSize="24" VerticalAlignment="Bottom" Margin="0,0,0,5" />
+                <StackPanel Grid.Column="2" Spacing="4">
+                  <TextBlock Classes="caption" Text="映射目标" />
+                  <ComboBox x:Name="TargetMappingCombo" ItemsSource="{Binding SelectedMapping.Choices}" SelectedItem="{Binding SelectedMapping.Target, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择映射目标按键" />
+                </StackPanel>
+              </Grid>
+              <TextBlock x:Name="SelectionText" Classes="caption" Text="{Binding MappingSelectionText}" />
+              <TextBlock Classes="caption" Text="{Binding MappingStickSummary}" />
+            </StackPanel>
+          </Border>
+          <Border x:Name="KeyboardSupplement" Classes="card" Padding="16" IsVisible="{Binding !IsKeyboardMouseInput}">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Text="键盘 / 鼠标补充" Classes="section" VerticalAlignment="Center" />
+                <ToggleSwitch x:Name="SupplementSwitch" Grid.Column="1" IsChecked="{Binding KeyboardMouseSupplementEnabled, Mode=TwoWay}" OnContent="已开启" OffContent="已关闭" AutomationProperties.Name="启用键盘和鼠标补充" />
+              </Grid>
+              <TextBlock x:Name="SupplementHint" Text="{Binding KeyboardSupplementHint}" Classes="caption" />
+              <StackPanel x:Name="SupplementOptions" Spacing="10" IsVisible="{Binding KeyboardMouseSupplementEnabled}">
+                <TextBlock x:Name="KeyboardHint" Classes="caption" Text="{Binding KeyboardBindingHint}" />
+                <views:KeyboardMouseControl MaxHeight="280" PressedKeys="{Binding MappingPressedKeys}" MouseDelta="{Binding MappingMouseDelta}" SelectedKey="{Binding MappingSelectedKey}" SelectedKeys="{Binding MappingSelectedKeys}" SelectKeyCommand="{Binding SelectMappingKeyCommand}" Cursor="Hand" />
+                <TextBlock Classes="caption" Text="{Binding MappingKeyboardStatus}" HorizontalAlignment="Center" />
+                <Grid IsVisible="{Binding CanConfigureHybridGyro}" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <TextBlock Text="陀螺仪输入源" VerticalAlignment="Center" />
+                  <ComboBox x:Name="SupplementGyroMode" Grid.Column="1" ItemsSource="{Binding GyroSources}" SelectedItem="{Binding SelectedGyroSource}" HorizontalAlignment="Stretch" AutomationProperties.Name="陀螺仪输入源" />
+                </Grid>
+                <TextBlock x:Name="HybridStatus" Classes="caption" Text="{Binding HybridGyroStatus}" />
+                <TextBlock Text="{Binding KeyboardMouseStatus}" Classes="caption" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </TabItem>
+      <TabItem Header="全部映射" FontSize="15">
+        <Border x:Name="MappingRulesView" Classes="card" Padding="16" Margin="0,12,0,0">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="caption" Text="每个输出按键集中显示全部输入来源 · 双击卡片编辑这组来源，确认后可立即测试。" />
+            <ItemsControl x:Name="MappingRulesList" ItemsSource="{Binding AllMappingRules}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="270" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:MappingRuleGroup">
+                <Border Classes="inset" Focusable="True" Cursor="Hand" DoubleTapped="OnRuleDoubleTapped" ToolTip.Tip="双击配置此输出按键的全部来源" Margin="0,0,8,8" Padding="12">
+                  <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding TargetLabel}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="1" Text="{Binding SourceCountLabel}" Classes="caption" VerticalAlignment="Center" />
+                    </Grid>
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding ControllerSummary}" IsVisible="{Binding HasControllerSources}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding KeyboardSummary}" IsVisible="{Binding HasKeyboardSources}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding MouseSummary}" IsVisible="{Binding HasMouseSources}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </TabItem>
+    </TabControl>
+    <TextBlock Classes="caption" Text="本页按当前配置即时测试；应用并保存后用于虚拟输出。键鼠转发按 F8 开始，Esc 暂停。" />
   </StackPanel>
 </UserControl>

@@ -28,7 +28,7 @@ public partial class MainViewModel
     [ObservableProperty] public partial string PushRate { get; set; } = "跟随输入源帧（推荐）";
     [ObservableProperty] public partial decimal ApiPort { get; set; }
     [ObservableProperty] public partial decimal UsbPort { get; set; }
-    [ObservableProperty] public partial double RumbleMultiplier { get; set; } = 1;
+    [ObservableProperty] public partial double RumbleMultiplier { get; set; } = OutputRouteOptions.DefaultRumbleGain;
     [ObservableProperty] public partial bool AudioProtection { get; set; } = true;
     [ObservableProperty] public partial decimal GyroPitchScale { get; set; } = 1;
     [ObservableProperty] public partial decimal GyroYawScale { get; set; } = 1;
@@ -108,8 +108,9 @@ public partial class MainViewModel
 
     private OutputRouteOptions CaptureRouteDraft() => new()
     {
-        InputKind = IsWindowsBridgeInput ? BridgeInputKind.WindowsGamepad : BridgeInputKind.Ns2Ble,
-        Ns2Buttons = CaptureButtonMappings(),
+        InputKind = CurrentInputKind, MouseMode = CurrentMouseMode, GyroSource = CurrentGyroSource, KeyboardMouseSupplementEnabled = KeyboardMouseSupplementEnabled,
+        Ns2Buttons = CaptureButtonMappings(), KeyboardOverrides = new(keyboardDraft),
+        KeyboardStickBindings = new(keyboardStickDraft), ControllerSticks = controllerStickDraft with { },
         PushHz = PushRate switch { "66 Hz" => 66, "125 Hz" => 125, "250 Hz" => 250, "按目标手柄默认 USB 上限" => -1, _ => 0 },
         ApiPort = (int)ApiPort, UsbPort = (int)UsbPort, RumbleGain = RumbleMultiplier, AudioGuard = AudioProtection,
         GyroPitch = (double)GyroPitchScale, GyroYaw = (double)GyroYawScale, GyroRoll = (double)GyroRollScale,
@@ -127,8 +128,13 @@ public partial class MainViewModel
         InvertPitch = route.InvertPitch; InvertYaw = route.InvertYaw; InvertRoll = route.InvertRoll;
         UseStickCalibration = route.UseStickCalibration;
         OutputDeadzone = route.StickDeadzone * 100; OutputDeadzoneMode = DeadzoneModes[route.RadialDeadzone ? 0 : 1];
-        BridgeInputSelection = BridgeInputKinds[route.InputKind == BridgeInputKind.WindowsGamepad ? 1 : 0];
+        SelectAvailableInput(route.InputKind);
+        SelectedMouseMode = MouseModes[route.MouseMode == MouseEmulationMode.Gyroscope ? 1 : 0];
+        SelectedGyroSource = GyroSources[(int)route.GyroSource];
+        KeyboardMouseSupplementEnabled = route.KeyboardMouseSupplementEnabled;
         LoadButtonMappings(route.Ns2Buttons);
+        LoadKeyboardBindings(route.KeyboardOverrides);
+        LoadStickMappings(route.KeyboardStickBindings, route.ControllerSticks);
     }
 
     [RelayCommand] private void ApplyBridgeSettings() => ApplyBridgeConfiguration();
@@ -210,12 +216,12 @@ public partial class MainViewModel
         UpdateOverview();
         BridgeRateText = $"{(output.Sent - outputBaseline) / Math.Max(1, (now - diagnosticAt).TotalSeconds):F1} Hz";
         outputBaseline = output.Sent; diagnosticAt = now;
-        BridgeLinkText = !IsServerRunning ? "OFFLINE · 虚拟输出未启动" : output.Live ? "LIVE · 实体输入正在转发" : "NEUTRAL · 等待实体输入 / 已安全归零";
+        BridgeLinkText = !IsServerRunning ? "OFFLINE · 虚拟输出未启动" : output.Live ? "LIVE · 输入正在转发" : "NEUTRAL · 等待输入 / 已安全归零";
         BridgeAddressText = output.Endpoints;
         BridgeCountsText = $"发送 {output.Sent:N0} · 主机反馈 {output.FeedbackCount:N0}";
         BridgeFeedbackText = output.FeedbackState;
-        BridgeRumbleText = IsWindowsBridgeInput ? gamepads.FeedbackStatus : $"{(transport.CanRumble ? "BLE 震动通道已就绪" : "BLE 震动特征未就绪")} · 写入 {transport.RumbleWrites:N0} / 失败 {transport.RumbleFailures:N0}";
-        lock (frameGate) BridgeInputText = IsWindowsBridgeInput ? BridgeSourceStatus : IsNs2UsbConnected ? Ns2UsbStatus : IsConnected ? $"FD2 最近输入距今 {Math.Max(0, (now - lastFrame.ReceivedAt).TotalMilliseconds):F0} ms · {ControllerStage}" : "未连接实体 NS2 USB / 蓝牙；虚拟输出保持中立状态";
+        BridgeRumbleText = IsKeyboardMouseInput ? "键鼠输入不支持振动" : IsWindowsBridgeInput ? gamepads.FeedbackStatus : $"{(transport.CanRumble ? "BLE 震动通道已就绪" : "BLE 震动特征未就绪")} · 写入 {transport.RumbleWrites:N0} / 失败 {transport.RumbleFailures:N0}";
+        lock (frameGate) BridgeInputText = IsKeyboardMouseInput ? KeyboardMouseStatus : IsWindowsBridgeInput ? BridgeSourceStatus : IsNs2UsbConnected ? Ns2UsbStatus : IsConnected ? $"FD2 最近输入距今 {Math.Max(0, (now - lastFrame.ReceivedAt).TotalMilliseconds):F0} ms · {ControllerStage}" : "未连接实体 NS2 USB / 蓝牙；虚拟输出保持中立状态";
         DeviceEnumerationText = WindowsGamepads.Count == 0 ? "尚无 Windows 手柄" : string.Join("\n", WindowsGamepads.Select(d => d.ToString()));
         StickCalibrationText = stickCalibration.ReadStatus(); OnPropertyChanged(nameof(CanCalibrateSticks));
         if (IsServerRunning && bridgeOptions.AudioGuard && output.Mode is VirtualControllerMode.DualSense or VirtualControllerMode.DualSenseEdge && now >= audioGuardAt)

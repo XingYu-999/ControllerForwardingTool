@@ -9,36 +9,94 @@ namespace ControllerForwardingTool.ViewModels;
 
 public partial class MainViewModel
 {
-    public bool IsMapping => SelectedPage == "按键映射";
-    public bool CanMapSource => !IsWindowsBridgeInput || SelectedBridgeGamepad?.Layout == ControllerLayout.Switch2Pro;
+    private bool isMappingAvailable;
+    public bool IsMappingAvailable => isMappingAvailable;
+    public bool IsMapping => IsMappingAvailable && SelectedPage == "按键映射";
+    public bool CanMapSource => IsMappingAvailable;
+    private void UpdateMappingAvailability()
+    {
+        var profile = VirtualProfile.Get(output.Mode);
+        bool available = IsServerRunning && output.IsRunning && !IsVirtualBusy &&
+            gamepads.Latest.Devices.Any(pad => inputGuard.IsOwned(pad) &&
+                pad.Vendor == profile.Vendor && pad.Product == profile.Product);
+        if (!SetProperty(ref isMappingAvailable, available, nameof(IsMappingAvailable))) return;
+        OpenMappingPreviewCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanMapSource));
+        OnPropertyChanged(nameof(CanCaptureSelectedOutput));
+        if (!available && SelectedPage == "按键映射") SelectedPage = "虚拟手柄";
+        OnPropertyChanged(nameof(IsMapping));
+    }
+    private ControllerLayout MappingSourceLayout => IsKeyboardMouseInput ? ControllerLayout.Xbox
+        : IsWindowsBridgeInput ? SelectedBridgeGamepad?.Layout ?? ControllerLayout.Generic : ControllerLayout.Switch2Pro;
     [ObservableProperty] public partial ButtonMappingRow? SelectedMapping { get; set; }
     [ObservableProperty] public partial MappingDiagram MappingSource { get; set; } = MappingDiagram.Empty;
     [ObservableProperty] public partial MappingDiagram MappingOutput { get; set; } = MappingDiagram.Empty;
     [ObservableProperty] public partial string MappingSourceName { get; set; } = "NS2 Pro";
     [ObservableProperty] public partial string MappingOutputName { get; set; } = "映射结果";
     [ObservableProperty] public partial bool HasMappingChanges { get; set; }
-    public ControllerButtons SelectedSourceButton => SelectedMapping?.Source ?? ControllerButtons.None;
-    public ControllerButtons SelectedOutputButton => MappingPreview.OutputButtons(SelectedMapping?.Target.Button ?? ControllerButtons.None, EditedOutputMode);
-    public string MappingEditHint => CanMapSource ? "点击左侧图形选择源按键，再点击右侧目标按键；也可使用下方下拉框。橙色为实时按下，蓝色框为当前配置项。" : "当前输入不是 NS2：可查看输入与输出对照。自定义按键映射目前适用于 NS2 输入。";
-    partial void OnSelectedMappingChanged(ButtonMappingRow? value) => NotifyMappingSelection();
-    private void NotifyMappingSelection()
-    { OnPropertyChanged(nameof(SelectedSourceButton)); OnPropertyChanged(nameof(SelectedOutputButton)); }
-    [RelayCommand] private void SelectMappingButton(ControllerButtons button)
-    { if (CanMapSource) SelectedMapping = ButtonMappings.FirstOrDefault(x => x.Source == button) ?? SelectedMapping; }
-    [RelayCommand] private void AssignMappingTarget(ControllerButtons button)
+    private ControllerButtons? inspectedOutput;
+    private MappingOrigins SelectedOrigins => MappingLookup.Find(SelectedOutputButton, EditedOutputMode, IsKeyboardMouseInput,
+        CaptureButtonMappings(), keyboardDraft, keyboardStickDraft);
+    public ControllerButtons SelectedSourceButton => ControllerLayouts.RemapFaceButtons(inspectedOutput is null
+        ? SelectedMapping?.Source ?? ControllerButtons.None : SelectedOrigins.Buttons, true, MappingSourceLayout.IsNintendo());
+    public ControllerButtons SelectedOutputButton => inspectedOutput ?? MappingPreview.OutputButtons(SelectedMapping?.Target.Button ?? ControllerButtons.None, EditedOutputMode);
+    public int[] MappingSelectedKeys => SelectedOrigins.Keys;
+    public bool CanCaptureSelectedOutput => CanMapSource && SelectedOutputButton != ControllerButtons.None &&
+        Enum.GetValues<ControllerButtons>().Any(b => MappingPreview.OutputButtons(b, EditedOutputMode) == SelectedOutputButton);
+    public string MappingSelectionText
     {
-        if (!CanMapSource || SelectedMapping is null) return;
-        var native = ControllerLayouts.RemapFaceButtons(button, MappingPreview.Layout(EditedOutputMode).IsNintendo(), true);
-        SelectedMapping.Target = SelectedMapping.Choices.First(x => x.Button == native);
+        get
+        {
+            var origins = SelectedOrigins;
+            var labels = ButtonMappings.Where(r => origins.Buttons.HasFlag(r.Source)).Select(r => "手柄 " + r.Label)
+                .Concat(origins.Keys.Select(KeyboardMapping.KeyName)).ToArray();
+            return "所选输出按钮的输入源（当前配置）：" + (labels.Length == 0 ? "未绑定" : string.Join("、", labels));
+        }
+    }
+    public string MappingEditHint => IsKeyboardMouseInput
+        ? "上方显示键鼠实时状态。双击下方输出按键可单独录入；点击快速配置，依次录入摇杆四个方向和按键。也可使用下拉框编辑默认按键映射。"
+        : "单击输出按钮查看对应输入源，双击只配置该按键；点击快速配置可逐项配置。摇杆仅接受实体摇杆；按钮可使用手柄、键盘或鼠标按键。";
+    partial void OnSelectedMappingChanged(ButtonMappingRow? value) { inspectedOutput = null; NotifyMappingSelection(); }
+    private void NotifyMappingSelection()
+    {
+        OnPropertyChanged(nameof(SelectedSourceButton)); OnPropertyChanged(nameof(SelectedOutputButton)); OnPropertyChanged(nameof(HighlightedMappingTarget));
+        OnPropertyChanged(nameof(MappingSelectedKeys)); OnPropertyChanged(nameof(MappingSelectionText)); OnPropertyChanged(nameof(CanCaptureSelectedOutput));
+    }
+    [RelayCommand] private void SelectMappingButton(ControllerButtons button)
+    {
+        inspectedOutput = null; MappingSelectedKey = 0;
+        var native = ControllerLayouts.RemapFaceButtons(button, MappingSourceLayout.IsNintendo(), true);
+        SelectedMapping = ButtonMappings.FirstOrDefault(x => x.Source == native) ?? SelectedMapping;
+        NotifyMappingSelection();
+    }
+    [RelayCommand] private void SelectOutputMappingButton(ControllerButtons button)
+    {
+        var row = ButtonMappings.FirstOrDefault(r => MappingPreview.OutputButtons(r.Target.Button, EditedOutputMode) == button);
+        if (row is not null) SelectedMapping = row;
+        inspectedOutput = button; MappingSelectedKey = 0;
+        NotifyMappingSelection();
+    }
+    [RelayCommand] private void SelectMappingKey(int key)
+    {
+        inspectedOutput = MappingPreview.OutputButtons(MappingLookup.KeyTarget(key, IsKeyboardMouseInput,
+            CaptureButtonMappings(), keyboardDraft, keyboardStickDraft), EditedOutputMode);
+        MappingSelectedKey = key;
+        NotifyMappingSelection();
     }
     private void UpdateMappingComparison()
     {
         if (!IsMapping) return;
-        var pair = inputBridge?.Comparison ?? new BridgeComparison(ControllerState.Neutral(DateTimeOffset.MinValue), ControllerState.Neutral(DateTimeOffset.MinValue));
-        bool live = IsServerRunning && DateTimeOffset.Now - pair.Source.ReceivedAt < TimeSpan.FromMilliseconds(250);
-        var sourceLayout = IsWindowsBridgeInput ? SelectedBridgeGamepad?.Layout ?? ControllerLayout.Generic : ControllerLayout.Switch2Pro;
-        MappingSourceName = IsWindowsBridgeInput ? SelectedBridgeGamepad?.Name ?? "等待输入手柄" : "NS2 Pro · 蓝牙原始输入";
-        MappingOutputName = VirtualProfile.Get(EditedOutputMode).Name + (IsServerRunning ? " · 已应用映射" : " · 离线配置");
+        var now = DateTimeOffset.Now;
+        var raw = inputBridge?.Comparison.Source ?? ControllerState.Neutral(DateTimeOffset.MinValue);
+        var draft = CaptureRouteDraft().ApplyTo(bridgeOptions) with { Mode = EditedOutputMode };
+        var keyboard = IsKeyboardMouseCaptured ? keyboardMouse?.Latest : mappingKeyboardPreview;
+        var keys = IsKeyboardMouseCaptured ? keyboardMouse!.PressedKeys : MappingPressedKeys.ToHashSet();
+        var profile = !IsWindowsBridgeInput && !IsNs2UsbConnected ? activeStickProfile : null;
+        var pair = MappingDraftPreview.Create(raw, keyboard, keys, IsKeyboardMouseInput, draft, profile, BridgeControllerHasMotion, now);
+        bool live = now - pair.Source.ReceivedAt < TimeSpan.FromMilliseconds(250);
+        var sourceLayout = MappingSourceLayout;
+        MappingSourceName = IsKeyboardMouseInput ? "键盘 / 鼠标" : IsWindowsBridgeInput ? SelectedBridgeGamepad?.Name ?? "Windows 手柄 · 离线配置" : "NS2 Pro · USB / 蓝牙输入";
+        MappingOutputName = VirtualProfile.Get(EditedOutputMode).Name + " · 当前配置测试";
         MappingSource = new(pair.Source, sourceLayout, live, ControllerLayouts.RemapFaceButtons(pair.Source.Buttons, true, sourceLayout.IsNintendo()));
         MappingOutput = new(pair.Output, MappingPreview.Layout(EditedOutputMode), live, MappingPreview.OutputButtons(pair.Output.Buttons, EditedOutputMode));
     }
@@ -47,24 +105,37 @@ public partial class MainViewModel
     private void LoadButtonMappings(Ns2ButtonMapping mapping)
     {
         ButtonMappings.Clear();
-        var sources = new[] { ControllerButtons.GL, ControllerButtons.GR }
-            .Concat(Enum.GetValues<ControllerButtons>().Where(x => x is not (ControllerButtons.None or ControllerButtons.GL or ControllerButtons.GR or ControllerButtons.Touchpad)));
+        var sources = Enum.GetValues<ControllerButtons>().Where(x => x != ControllerButtons.None);
         foreach (var source in sources)
         {
-            var row = new ButtonMappingRow(source, mapping.Target(source), EditedOutputMode);
+            var row = new ButtonMappingRow(source, mapping.Target(source), EditedOutputMode)
+                { SourceLayout = MappingSourceLayout, KeyboardSource = IsKeyboardMouseInput };
             row.PropertyChanged += (_, args) =>
             {
                 if (args.PropertyName != nameof(ButtonMappingRow.Target)) return;
                 HasMappingChanges = true;
-                ButtonMappingStatus = "有未应用的修改；右侧实时状态仍显示已保存映射。点击应用并保存后生效。";
-                NotifyMappingSelection();
+                ButtonMappingStatus = "当前修改已用于本页测试；点击右上角“应用并保存”保存到此线路。";
+                inspectedOutput = null; NotifyMappingSelection();
+                OnPropertyChanged(nameof(AllMappingRules));
             };
             ButtonMappings.Add(row);
         }
-        SelectedMapping = ButtonMappings.FirstOrDefault();
+        SelectedMapping = ButtonMappings.FirstOrDefault(x => x.Source == ControllerButtons.B);
         HasMappingChanges = false;
         ButtonMappingStatus = "已载入保存的映射。修改后点击应用并保存；右侧实时显示已应用的输出。";
         OnPropertyChanged(nameof(CanMapSource)); OnPropertyChanged(nameof(MappingEditHint));
+        OnPropertyChanged(nameof(AllMappingRules));
+    }
+    private void RefreshMappingSourceLabels()
+    {
+        OnPropertyChanged(nameof(MappingStickSummary));
+        foreach (var row in ButtonMappings)
+        {
+            row.SourceLayout = MappingSourceLayout;
+            row.KeyboardSource = IsKeyboardMouseInput;
+        }
+        NotifyMappingSelection();
+        OnPropertyChanged(nameof(AllMappingRules));
     }
     [RelayCommand] private void SaveButtonMappings()
         => SaveRouteButtonMappings();
@@ -76,19 +147,33 @@ public partial class MainViewModel
     {
         try
         {
-            var route = bridgeOptions.Route(EditedOutputMode) with { Ns2Buttons = CaptureButtonMappings() };
+            CancelMappingCapture();
+            var route = bridgeOptions.Route(EditedOutputMode) with { Ns2Buttons = CaptureButtonMappings(), KeyboardOverrides = new(keyboardDraft), GyroSource = CurrentGyroSource,
+                KeyboardMouseSupplementEnabled = KeyboardMouseSupplementEnabled, MouseMode = CurrentMouseMode,
+                KeyboardStickBindings = new(keyboardStickDraft), ControllerSticks = controllerStickDraft with { } };
             var next = bridgeOptions.SaveRoute(EditedOutputMode, route);
             if (save is null) next.Save(); else save(next);
             bridgeOptions = next; output.Options = next; transport.RumbleGain = next.RumbleGain;
             HasMappingChanges = false;
-            ButtonMappingStatus = $"{RouteConfigurationTitle}：映射已保存；输出运行时下一帧生效，NS2 原始输入显示不变";
+            ButtonMappingStatus = $"{RouteConfigurationTitle}：映射已保存；所有输入方式在下一帧应用，原始输入显示不变";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         { ButtonMappingStatus = $"映射未应用：{ex.Message}"; }
     }
-    [RelayCommand] private void ResetButtonMappings() { LoadButtonMappings(new()); HasMappingChanges = true; SaveButtonMappings(); }
-    [RelayCommand] private void OpenMappingPreview()
+    [RelayCommand] private void ResetButtonMappings()
     {
+        var defaults = OutputRouteOptions.CreateDefault(EditedOutputMode);
+        KeyboardMouseSupplementEnabled = defaults.KeyboardMouseSupplementEnabled;
+        SelectedGyroSource = GyroSources[(int)defaults.GyroSource];
+        SelectedMouseMode = MouseModes[defaults.MouseMode == MouseEmulationMode.Gyroscope ? 1 : 0];
+        LoadButtonMappings(defaults.Ns2Buttons); LoadKeyboardBindings(defaults.KeyboardOverrides);
+        LoadStickMappings(defaults.KeyboardStickBindings, defaults.ControllerSticks);
+        HasMappingChanges = true; SaveButtonMappings();
+    }
+    [RelayCommand(CanExecute = nameof(IsMappingAvailable))] private void OpenMappingPreview()
+    {
+        UpdateMappingAvailability();
+        if (!IsMappingAvailable) return;
         SelectedPage = "按键映射";
         UpdateMappingComparison();
     }
@@ -129,7 +214,42 @@ public sealed record ButtonMappingChoice(ControllerButtons Button, VirtualContro
 public partial class ButtonMappingRow : ObservableObject
 {
     public ControllerButtons Source { get; }
-    public string Label => new ButtonMappingChoice(Source).ToString();
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Label))]
+    public partial ControllerLayout SourceLayout { get; set; } = ControllerLayout.Switch2Pro;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Label))]
+    public partial bool KeyboardSource { get; set; }
+    public string Label
+    {
+        get
+        {
+            var displayed = ControllerLayouts.RemapFaceButtons(Source, true, SourceLayout.IsNintendo());
+            var label = new ButtonMappingChoice(displayed).ToString();
+            if (SourceLayout.IsPlayStation()) label = displayed switch
+            {
+                ControllerButtons.A => "×", ControllerButtons.B => "○", ControllerButtons.X => "□", ControllerButtons.Y => "△",
+                ControllerButtons.L => "L1", ControllerButtons.R => "R1", ControllerButtons.ZL => "L2", ControllerButtons.ZR => "R2",
+                ControllerButtons.Plus => "Options / Start", ControllerButtons.Minus => "Create / Share / Select",
+                ControllerButtons.Home => "PS", _ => label
+            };
+            else if (!SourceLayout.IsNintendo()) label = displayed switch
+            {
+                ControllerButtons.L => "LB", ControllerButtons.R => "RB", ControllerButtons.ZL => "LT", ControllerButtons.ZR => "RT",
+                ControllerButtons.Plus => "Menu", ControllerButtons.Minus => "View", _ => label
+            };
+            if (!KeyboardSource) return label;
+            var key = Source switch
+            {
+                ControllerButtons.B => "J / 空格", ControllerButtons.A => "K", ControllerButtons.Y => "U", ControllerButtons.X => "I",
+                ControllerButtons.L => "Q", ControllerButtons.R => "E", ControllerButtons.ZL => "鼠标右键", ControllerButtons.ZR => "鼠标左键",
+                ControllerButtons.LeftStick => "Shift", ControllerButtons.RightStick => "Ctrl", ControllerButtons.Plus => "Enter", ControllerButtons.Minus => "Tab",
+                ControllerButtons.Up => "↑", ControllerButtons.Down => "↓", ControllerButtons.Left => "←", ControllerButtons.Right => "→",
+                ControllerButtons.Home => "F1", ControllerButtons.Capture => "C", _ => "未绑定键鼠"
+            };
+            return $"{key} → {label}";
+        }
+    }
     public IReadOnlyList<ButtonMappingChoice> Choices { get; }
     [ObservableProperty] public partial ButtonMappingChoice Target { get; set; }
     public ButtonMappingRow(ControllerButtons source, ControllerButtons target, VirtualControllerMode? mode = null)

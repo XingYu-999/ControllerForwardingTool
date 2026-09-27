@@ -2,22 +2,44 @@
              xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views" x:Class="ControllerForwardingTool.Views.VirtualPage" x:DataType="vm:MainViewModel">
   <StackPanel Spacing="18">
     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
-      <StackPanel Spacing="5"><TextBlock Classes="eyebrow" Text="VIRTUAL ARENA / 手柄转换" /><TextBlock Classes="title" Text="选择你的游戏身份" /><TextBlock Classes="caption" Text="选择输入手柄和输出身份，将实时按键、摇杆与可用体感转发为虚拟 USB。" /></StackPanel>
+      <StackPanel Spacing="5"><TextBlock Classes="eyebrow" Text="VIRTUAL ARENA / 手柄转换" /><TextBlock Classes="title" Text="选择你的游戏身份" /><TextBlock Classes="caption" Text="选择键鼠或手柄输入及输出身份，将按键、摇杆与体感转发为虚拟 USB。" /></StackPanel>
       <Border Grid.Column="1" Classes="badge" VerticalAlignment="Center"><TextBlock Text="{Binding BridgeLinkText}" Classes="caption" /></Border>
     </Grid>
     <Border Classes="card" Padding="20">
       <StackPanel Spacing="12">
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="01 / 输入手柄" /><Button Grid.Column="1" Content="刷新输入设备" Command="{Binding RefreshGamepadsCommand}" /></Grid>
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="16" IsEnabled="{Binding CanEditMode}">
-          <ComboBox ItemsSource="{Binding BridgeInputKinds}" SelectedItem="{Binding BridgeInputSelection}" HorizontalAlignment="Stretch" AutomationProperties.Name="虚拟输出的输入类型" />
-          <ComboBox Grid.Column="1" ItemsSource="{Binding BridgeInputDevices}" SelectedItem="{Binding SelectedBridgeGamepad}" PlaceholderText="选择实体 Xbox / Switch / PlayStation 手柄" HorizontalAlignment="Stretch" IsEnabled="{Binding IsWindowsBridgeInput}" AutomationProperties.Name="虚拟输出的实体输入手柄" />
-        </Grid>
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="输入设备" /><Button Grid.Column="1" Content="刷新输入设备" Command="{Binding RefreshGamepadsCommand}" /></Grid>
+        <TextBlock Classes="caption" Text="默认可使用键盘 / 鼠标，无需实体手柄。选择实体手柄时发送一次 25% 强度、250 ms 的识别振动；键鼠不振动。" />
+        <Border IsVisible="{Binding HasNoBridgeInputCards}" Padding="20" Background="#F4F7FC" CornerRadius="8">
+          <StackPanel Spacing="6">
+            <TextBlock Text="未发现可用的输入手柄" FontWeight="SemiBold" />
+            <TextBlock Classes="caption" Text="连接 USB 或系统蓝牙手柄，或在 NS2 Pro 连接页连接手柄后刷新。" />
+          </StackPanel>
+        </Border>
+        <ItemsControl ItemsSource="{Binding BridgeInputCards}" IsEnabled="{Binding CanEditMode}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="210" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:TesterDeviceCard">
+              <Button Classes="modeCard" Classes.selected="{Binding IsSelected}" Command="{Binding SelectCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10" Margin="0,0,8,8"
+                      AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Detail}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding KindLabel}" FontSize="11" Foreground="{StaticResource AccentStrong}" />
+                  <Image Source="{Binding Image}" Height="68" Stretch="Uniform" />
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Detail}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+                  <TextBlock Text="✓ 已选择" IsVisible="{Binding IsSelected}" Foreground="{StaticResource AccentStrong}" FontSize="11" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="{Binding BridgeInputRumbleResult}" Classes="caption" IsVisible="{Binding HasBridgeInputRumbleResult}" />
         <TextBlock Text="{Binding BridgeSourceStatus}" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding BridgeSourceHint}" Classes="caption" />
-        <TextBlock Classes="caption" Text="支持 SDL 标准映射的 USB / 已配对蓝牙手柄。体感、触摸坐标、C / 背键等源设备未提供的能力不会凭空生成；不启用键盘替代。输入型号与输出型号可不同，切换前先停止输出。" />
+        <TextBlock Classes="caption" Text="支持键鼠、SDL 标准映射的 USB / 已配对蓝牙手柄及 NS2 直连。输入和输出型号可不同；连接成功后在按键映射页配置按键和鼠标功能，切换输入前先停止输出。" />
       </StackPanel>
     </Border>
-    <TextBlock Classes="section" Text="02 / 输出身份" />
+    <TextBlock Classes="section" Text="输出身份" />
     <Border Background="#EAF7EF" BorderBrush="#9BCDAA" BorderThickness="1" CornerRadius="12" Padding="18,14">
       <StackPanel Spacing="5">
         <TextBlock Text="{Binding VirtualModeStatus}" FontSize="24" FontWeight="Bold" Foreground="#176B37" />
@@ -45,7 +67,7 @@
     </ItemsControl>
     <Border Classes="card" Padding="20">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
-        <StackPanel Spacing="8"><TextBlock Text="{Binding SelectedModeCard.Profile.Description}" Classes="section" /><TextBlock Text="{Binding SelectedModeCard.Profile.Protocol}" Classes="mono" /><TextBlock Text="{Binding VirtualState}" Classes="caption" /><TextBlock Classes="caption" Text="切换身份前先停止当前输出。各输出线路独立保存配置；NS2 背键默认映射左右摇杆按下，可在启动前配置。" /></StackPanel>
+        <StackPanel Spacing="8"><TextBlock Text="{Binding SelectedModeCard.Profile.Description}" Classes="section" /><TextBlock Text="{Binding SelectedModeCard.Profile.Protocol}" Classes="mono" /><TextBlock Text="{Binding VirtualState}" Classes="caption" /><TextBlock Classes="caption" Text="切换身份前先停止当前输出。各输出线路独立保存配置；NS2 背键默认映射左右摇杆按下，虚拟手柄连接成功后可修改映射。" /></StackPanel>
         <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
           <Button Classes="primary" Content="启动虚拟 USB · 自动连接" Command="{Binding StartServerCommand}" IsEnabled="{Binding CanStartVirtual}" HorizontalAlignment="Stretch" />
           <Button Content="配置 USB/IP 驱动" HorizontalAlignment="Stretch" Command="{Binding RefreshDriverStateCommand}" IsEnabled="{Binding CanManageDriver}">
@@ -57,10 +79,10 @@
         </StackPanel>
       </Grid>
     </Border>
-    <Border Classes="card" Padding="20">
+    <Border Classes="card" Padding="20" IsVisible="{Binding IsMappingAvailable}">
       <StackPanel Spacing="12">
         <TextBlock Classes="section" Text="按键映射" />
-        <TextBlock Classes="caption" Text="为当前输出线路单独配置 NS2 输入的按键映射；无需先启动输出。运行后可实时对照输入与输出。" TextWrapping="Wrap" />
+        <TextBlock Classes="caption" Text="虚拟手柄已连接。可为当前输出线路配置键鼠或任意手柄输入的按键映射；保存后下一帧生效，运行时可对照输入与输出。" TextWrapping="Wrap" />
         <Button Classes="primary" Content="打开按键映射" Command="{Binding OpenMappingPreviewCommand}" HorizontalAlignment="Left" />
       </StackPanel>
     </Border>

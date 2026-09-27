@@ -22,14 +22,12 @@
           <Border Classes="card">
             <StackPanel Spacing="10">
               <TextBlock Classes="section" Text="配置与日志" />
-              <TextBlock Classes="muted" Text="配置、校准、手柄记录、日志和运行时文件保存在当前用户的数据目录，不写入安装目录。" TextWrapping="Wrap" />
+              <TextBlock Classes="caption" Text="配置与日志保存在当前用户的数据目录，不写入安装目录。各项参数在对应页面保存。" />
               <TextBlock Text="{Binding UserDataDirectoryPath}" TextWrapping="Wrap" />
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="打开配置文件" Command="{Binding OpenConfigurationFileCommand}" />
-                <Button Content="打开日志目录" Command="{Binding OpenLogDirectoryCommand}" />
-              </StackPanel>
-              <TextBlock Classes="muted" Text="{Binding LogWriteStatus}" TextWrapping="Wrap" />
-              <TextBlock Classes="muted" Text="{Binding DataFilesResult}" TextWrapping="Wrap" />
+              <Button Content="打开目录" Command="{Binding OpenUserDataDirectoryCommand}" HorizontalAlignment="Left" ToolTip.Tip="{Binding LogWriteStatus}" />
+              <TextBlock Classes="caption" Margin="0,10,0,0" Text="手动编辑配置前请先从托盘退出程序，下次启动读取修改。升级和卸载保留用户数据。" />
+              <TextBlock Classes="caption" Text="{Binding LogWriteStatus}" IsVisible="{Binding HasLogWriteError}" />
+              <TextBlock Classes="caption" Text="{Binding DataFilesResult}" IsVisible="{Binding HasDataFilesResult}" />
             </StackPanel>
           </Border>
           <Border Classes="card">

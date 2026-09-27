@@ -18,7 +18,12 @@ public sealed class BleRumblePlayback
             transientAt = now;
             return incoming;
         }
-        if (held is not null) return held;
+        if (held is not null)
+        {
+            if (held.PlaybackDuration is not { } duration || now - transientAt < duration) return held;
+            held = null;
+            return Pro2OutputPacketMapper.BuildOrdinaryPacket(0, 0, "pulse-stop");
+        }
         if (transientActive && now - transientAt >= TimeSpan.FromMilliseconds(500))
         {
             transientActive = false;

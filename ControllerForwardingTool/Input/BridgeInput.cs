@@ -4,7 +4,7 @@ using ControllerForwardingTool.VirtualDevice;
 
 namespace ControllerForwardingTool.Input;
 
-public enum BridgeInputKind { Ns2Ble, WindowsGamepad }
+public enum BridgeInputKind { Ns2Ble, WindowsGamepad, KeyboardMouse }
 public sealed record BridgeComparison(ControllerState Source, ControllerState Output);
 
 /// <summary>Native Nintendo/XInput and tester coordinates: +Y is up. SDL +Y is down.</summary>
@@ -51,13 +51,18 @@ public sealed class ControllerInputBridge(Action<ControllerState> publish, Func<
     private GamepadDevice? device;
     private GamepadDevice? ns2Usb;
     private bool usbLive;
+    private ControllerState physical = ControllerState.Neutral(DateTimeOffset.MinValue);
+    private ControllerState physicalSource = ControllerState.Neutral(DateTimeOffset.MinValue);
+    private ControllerState supplement = ControllerState.Neutral(DateTimeOffset.MinValue);
+    private IReadOnlySet<int> supplementKeys = new HashSet<int>();
+    private bool physicalHasMotion;
     public void SelectNs2Usb(GamepadDevice? pad)
     {
         lock (gate)
         {
             if (ns2Usb?.Id == pad?.Id) return;
             ns2Usb = pad; usbLive = false;
-            if (kind == BridgeInputKind.Ns2Ble) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
+            if (kind == BridgeInputKind.Ns2Ble) ResetPhysical();
         }
     }
     private BridgeComparison comparison = new(ControllerState.Neutral(DateTimeOffset.MinValue), ControllerState.Neutral(DateTimeOffset.MinValue));
@@ -65,38 +70,96 @@ public sealed class ControllerInputBridge(Action<ControllerState> publish, Func<
     public ControllerState Latest => Comparison.Output;
     public void Select(BridgeInputKind source, GamepadDevice? pad)
     {
-        lock (gate) { kind = source; device = pad; Emit(ControllerState.Neutral(DateTimeOffset.MinValue)); }
+        lock (gate) { kind = source; device = pad; ResetPhysical(); }
     }
     public void Ble(ControllerState state, StickProfile? profile)
     {
         lock (gate) if (kind == BridgeInputKind.Ns2Ble && !usbLive)
         {
             var config = options();
-            Emit(StickMath.Apply(config.Ns2Buttons.Apply(state), profile, config), state);
+            PublishPhysical(config.ControllerSticks.Apply(StickMath.Apply(config.Ns2Buttons.Apply(state), profile, config)), state, true);
         }
     }
     public void DisconnectBle()
     {
-        lock (gate) if (kind == BridgeInputKind.Ns2Ble && !usbLive) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
+        lock (gate) if (kind == BridgeInputKind.Ns2Ble && !usbLive) ResetPhysical();
     }
     public void Windows(GamepadFrame frame, double now)
     {
         lock (gate)
         {
+            if (kind == BridgeInputKind.KeyboardMouse) return;
             var source = kind == BridgeInputKind.Ns2Ble ? ns2Usb : device;
             if (source is null || now - frame.At > .25 || now < frame.At || !frame.Inputs.TryGetValue(source.Id, out var input) ||
                 !frame.Devices.Any(d => d.Id == source.Id) || !input.Standard)
             {
                 if (kind == BridgeInputKind.WindowsGamepad || usbLive)
-                    if (Latest.ReceivedAt != DateTimeOffset.MinValue) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
+                    if (Latest.ReceivedAt != DateTimeOffset.MinValue) ResetPhysical();
                 usbLive = false; return;
             }
             usbLive = kind == BridgeInputKind.Ns2Ble;
             var state = WindowsInputMapper.Map(source, input, motion(source.Id), DateTimeOffset.Now);
             var config = options();
             var raw = state;
-            if (source.Layout == ControllerLayout.Switch2Pro) state = config.Ns2Buttons.Apply(state);
-            Emit(StickMath.Apply(state, null, config), raw);
+            state = config.Ns2Buttons.Apply(state);
+            PublishPhysical(config.ControllerSticks.Apply(StickMath.Apply(state, null, config)), raw, input.Accel is not null && input.Gyro is not null);
+        }
+    }
+    public void KeyboardMouse(ControllerState state, IReadOnlySet<int>? keys = null)
+    {
+        lock (gate)
+            if (kind == BridgeInputKind.KeyboardMouse)
+            {
+                var config = options();
+                var mapped = keys is null ? config.Ns2Buttons.Apply(state) : KeyboardMapping.Apply(state, keys, config.Ns2Buttons, config.KeyboardOverrides, config.KeyboardStickBindings);
+                Emit(StickMath.Apply(mapped, null, config), state);
+            }
+    }
+    public void Supplement(ControllerState state, IReadOnlySet<int> keys)
+    {
+        lock (gate)
+        {
+            if (kind == BridgeInputKind.KeyboardMouse) return;
+            // A keyboard timer must not keep a disconnected or stale physical controller alive.
+            if (!Fresh(physical, DateTimeOffset.Now)) { ResetPhysical(); return; }
+            supplement = state; supplementKeys = new HashSet<int>(keys);
+            PublishCombined();
+        }
+    }
+    private static bool Fresh(ControllerState state, DateTimeOffset now) =>
+        state.ReceivedAt <= now && now - state.ReceivedAt < TimeSpan.FromMilliseconds(250);
+    private void ResetPhysical()
+    {
+        physical = physicalSource = supplement = ControllerState.Neutral(DateTimeOffset.MinValue);
+        supplementKeys = new HashSet<int>(); physicalHasMotion = false;
+        Emit(physical);
+    }
+    private void PublishPhysical(ControllerState mapped, ControllerState raw, bool hasMotion)
+    {
+        physical = mapped; physicalSource = raw; physicalHasMotion = hasMotion;
+        PublishCombined();
+    }
+    private void PublishCombined()
+    {
+        var config = options();
+        if (!config.KeyboardMouseSupplementEnabled) ClearSupplementState();
+        bool fresh = Fresh(supplement, DateTimeOffset.Now);
+        var merged = HybridInputMapper.Merge(physical, fresh ? supplement : ControllerState.Neutral(DateTimeOffset.MinValue),
+            fresh ? supplementKeys : new HashSet<int>(), config, physicalHasMotion);
+        Emit(merged, physicalSource);
+    }
+    private void ClearSupplementState()
+    {
+        supplement = ControllerState.Neutral(DateTimeOffset.MinValue);
+        supplementKeys = new HashSet<int>();
+    }
+    public void ClearSupplement()
+    {
+        lock (gate)
+        {
+            ClearSupplementState();
+            if (kind == BridgeInputKind.KeyboardMouse) return;
+            if (Fresh(physical, DateTimeOffset.Now)) PublishCombined(); else ResetPhysical();
         }
     }
     private void Emit(ControllerState state, ControllerState? source = null)

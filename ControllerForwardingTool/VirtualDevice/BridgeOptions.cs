@@ -8,7 +8,10 @@ namespace ControllerForwardingTool.VirtualDevice;
 public sealed record BridgeOptions
 {
     public VirtualControllerMode Mode { get; init; } = VirtualControllerMode.Ns2Pro;
-    public BridgeInputKind InputKind { get; init; }
+    public BridgeInputKind InputKind { get; init; } = BridgeInputKind.KeyboardMouse;
+    public MouseEmulationMode MouseMode { get; init; } = MouseEmulationMode.RightStick;
+    public GyroInputSource GyroSource { get; init; } = GyroInputSource.Automatic;
+    public bool KeyboardMouseSupplementEnabled { get; init; }
     // Read older single-device settings; normalization migrates and clears this field.
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public BleDeviceIdentity? LastBleDevice { get; init; }
@@ -18,11 +21,14 @@ public sealed record BridgeOptions
     // USB serial -> controller Bluetooth address, learned only from a verified registration exchange.
     public Dictionary<string, ulong> Ns2UsbAddresses { get; init; } = [];
     public Ns2ButtonMapping Ns2Buttons { get; init; } = new();
+    public Dictionary<int, ControllerButtons> KeyboardOverrides { get; init; } = [];
+    public Dictionary<StickDirection, int> KeyboardStickBindings { get; init; } = [];
+    public StickMapping ControllerSticks { get; init; } = new();
     // Zero follows source frames, -1 uses the target USB reference rate; positive values are fixed rates.
     public int PushHz { get; init; }
     public int ApiPort { get; init; }
     public int UsbPort { get; init; }
-    public double RumbleGain { get; init; } = 1;
+    public double RumbleGain { get; init; } = OutputRouteOptions.DefaultRumbleGain;
     public bool AudioGuard { get; init; } = true;
     public bool AutoStartOutput { get; init; }
     public bool LaunchAtLogin { get; init; }
@@ -42,6 +48,15 @@ public sealed record BridgeOptions
     public GyroOptions Motion { get; init; } = new();
     // Flat fields remain the runtime snapshot and support importing pre-profile settings.
     public Dictionary<VirtualControllerMode, OutputRouteOptions> OutputRoutes { get; init; } = [];
+
+    public static BridgeOptions CreateDefault() => new BridgeOptions
+    {
+        Mode = VirtualControllerMode.Ns1Pro,
+        Motion = new() { AngularThreshold = 1.6, AccelerationThreshold = .05 },
+        OutputRoutes = Enum.GetValues<VirtualControllerMode>()
+            .ToDictionary(mode => mode, OutputRouteOptions.CreateDefault)
+    }.SelectRoute(VirtualControllerMode.Ns1Pro);
+
     public BridgeOptions Normalize()
     {
         var next = NormalizeValues();
@@ -56,13 +71,13 @@ public sealed record BridgeOptions
     }
 
     public OutputRouteOptions Route(VirtualControllerMode mode) =>
-        Normalize().OutputRoutes.GetValueOrDefault(mode, new OutputRouteOptions());
+        Normalize().OutputRoutes.GetValueOrDefault(mode, OutputRouteOptions.CreateDefault(mode));
 
     public BridgeOptions SelectRoute(VirtualControllerMode mode)
     {
         var normalized = Normalize();
         var validMode = Enum.IsDefined(mode) ? mode : VirtualControllerMode.Ns2Pro;
-        return normalized.OutputRoutes.GetValueOrDefault(validMode, new OutputRouteOptions())
+        return normalized.OutputRoutes.GetValueOrDefault(validMode, OutputRouteOptions.CreateDefault(validMode))
             .ApplyTo(normalized) with { Mode = validMode };
     }
 
@@ -77,15 +92,21 @@ public sealed record BridgeOptions
 
     internal BridgeOptions NormalizeValues() => this with {
         Mode = Enum.IsDefined(Mode) ? Mode : VirtualControllerMode.Ns2Pro,
-        InputKind = Enum.IsDefined(InputKind) ? InputKind : BridgeInputKind.Ns2Ble,
+        InputKind = Enum.IsDefined(InputKind) ? InputKind : BridgeInputKind.KeyboardMouse,
+        MouseMode = Enum.IsDefined(MouseMode) ? MouseMode : MouseEmulationMode.RightStick,
+        GyroSource = Enum.IsDefined(GyroSource) ? GyroSource : GyroInputSource.Automatic,
         LastBleDevice = null,
         BleDevices = NormalizeBleDevices(),
         Ns2UsbAddresses = (Ns2UsbAddresses ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Key) && Ns2PairingProtocol.IsAddress(p.Value)).ToDictionary(),
         Ns2Buttons = (Ns2Buttons ?? new()).Normalize(),
+        ControllerSticks = (ControllerSticks ?? new()).Normalize(),
+        KeyboardStickBindings = KeyboardStickMapping.Normalize(KeyboardStickBindings),
+        KeyboardOverrides = (KeyboardOverrides ?? []).Where(p => KeyboardMapping.CanBind(p.Key) &&
+            (p.Value == ControllerButtons.None || Ns2ButtonMapping.IsButton(p.Value))).ToDictionary(),
         PushHz = PushHz is -1 or 0 or 66 or 125 or 250 ? PushHz : 0,
         ApiPort = ApiPort is >= 1024 and <= 65535 ? ApiPort : 0,
         UsbPort = UsbPort is >= 1024 and <= 65535 ? UsbPort : 0,
-        RumbleGain = Clamp(RumbleGain, 0, 3, 1),
+        RumbleGain = Clamp(RumbleGain, 0, 3, OutputRouteOptions.DefaultRumbleGain),
         GyroPitch = Clamp(GyroPitch, .1, 4, 1), GyroYaw = Clamp(GyroYaw, .1, 4, 1), GyroRoll = Clamp(GyroRoll, .1, 4, 1),
         StickDeadzone = Clamp(StickDeadzone, 0, .3, 0), StickProfiles = StickProfiles ?? [],
         Motion = (Motion ?? new()).Normalize()
@@ -110,7 +131,7 @@ public sealed record BridgeOptions
             bool migrate = !File.Exists(settingsPath) && File.Exists(legacyPath);
             string json = File.ReadAllText(migrate ? legacyPath : settingsPath);
             BridgeOptions? loaded = JsonSerializer.Deserialize<BridgeOptions>(json);
-            if (loaded is null) return new();
+            if (loaded is null) return CreateDefault();
             BridgeOptions normalized = loaded.Normalize();
             if (migrate)
             {
@@ -138,7 +159,7 @@ public sealed record BridgeOptions
             }
             return normalized;
         }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return new(); }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return CreateDefault(); }
     }
     public void Save() => Save(SettingsPath);
 

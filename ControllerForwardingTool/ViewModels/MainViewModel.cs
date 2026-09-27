@@ -93,7 +93,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         get => selectedPage;
         set
         {
+            if (value == "按键映射" && !IsMappingAvailable) return;
+            bool leavingTester = IsTester;
             if (!SetProperty(ref selectedPage, value)) return;
+            if (leavingTester) StopKeyboardMouseCapture();
+            if (!IsMapping) LeaveMappingPage();
             UpdateNs2UsbAccess();
             foreach (string name in new[] { nameof(IsOverview), nameof(IsBluetooth), nameof(IsVirtual), nameof(IsMapping),
                 nameof(IsLogs), nameof(IsSettings), nameof(IsChangelog), nameof(IsAbout), nameof(IsTester), nameof(IsGyroCalibration), nameof(IsTesterSection) }) OnPropertyChanged(name);
@@ -112,7 +116,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public bool CanStopConnecting => AutoConnect || IsScanning || IsConnecting;
     public string ConnectActionText => SelectedCandidate is { } candidate && !bridgeOptions.BleDevices.AllowsAutoConnect(candidate)
         ? "重新配对选中设备" : "连接选中设备";
-    public bool CanStartVirtual => !IsVirtualBusy && !IsInstallingDriver && !IsServerRunning && driverReady && (!IsWindowsBridgeInput || SelectedBridgeGamepad is not null);
+    public bool CanStartVirtual => !IsVirtualBusy && !IsInstallingDriver && !IsServerRunning && driverReady;
     public bool IsDriverReady => driverReady;
     public string TesterBackend => gamepads.Status;
     public string ConnectionStatusLabel => IsNs2UsbConnected ? "NS2 Pro · USB 已连接" : IsConnected ? "NS2 Pro · 蓝牙已连接"
@@ -194,10 +198,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(CanManageDriver));
         OnPropertyChanged(nameof(CanUninstallDriver));
     }
-    partial void OnIsVirtualBusyChanged(bool value) { OnPropertyChanged(nameof(CanStartVirtual)); NotifyDriverAvailability(); OnPropertyChanged(nameof(CanEditMode)); }
+    partial void OnIsVirtualBusyChanged(bool value) { OnPropertyChanged(nameof(CanStartVirtual)); NotifyDriverAvailability(); OnPropertyChanged(nameof(CanEditMode)); ConfigureKeyboardMouse(); UpdateMappingAvailability(); }
     partial void OnIsInstallingDriverChanged(bool value) { OnPropertyChanged(nameof(CanStartVirtual)); NotifyDriverAvailability(); }
     partial void OnIsServerRunningChanged(bool value)
     {
+        UpdateMappingAvailability();
+        ConfigureKeyboardMouse();
         NotifyDriverAvailability();
         OnPropertyChanged(nameof(CanStartVirtual)); OnPropertyChanged(nameof(CanEditMode));
         OnPropertyChanged(nameof(VirtualModeStatus)); UpdateOverview();
@@ -208,6 +214,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     partial void OnSelectedTesterSourceChanged(string value)
     {
+        if (IsTester) StopKeyboardMouseCapture();
         ResetTesterRate();
         ResetStickTrace();
         bleCalibration.Cancel("已切换输入源");
@@ -219,6 +226,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     partial void OnSelectedWindowsGamepadChanged(GamepadDevice? oldValue, GamepadDevice? newValue)
     {
+        if (IsTester && oldValue?.Id != newValue?.Id) StopKeyboardMouseCapture();
         ResetTesterRate();
         ResetStickTrace();
         UpdateTesterCardSelection();
@@ -562,15 +570,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         try
         {
             VirtualState = "正在创建虚拟 USB…";
-            if (IsWindowsBridgeInput && (SelectedBridgeGamepad is not { } source || !inputGuard.Allows(source) || gamepads.Read(source) is null))
-            { VirtualState = "输入设备未就绪，请选择已连接的实体手柄"; return; }
-            if ((IsWindowsBridgeInput && SelectedBridgeGamepad?.Layout == ControllerLayout.Switch2Pro || !IsWindowsBridgeInput && IsNs2UsbConnected) && SelectedModeCard!.Profile.Mode == VirtualControllerMode.Ns2Pro)
+            SelectAvailableInput(CurrentInputKind);
+            if ((IsWindowsBridgeInput && SelectedBridgeGamepad?.Layout == ControllerLayout.Switch2Pro || CurrentInputKind == BridgeInputKind.Ns2Ble && IsNs2UsbConnected) && SelectedModeCard!.Profile.Mode == VirtualControllerMode.Ns2Pro)
             { VirtualState = "NS2 USB 测试接口需要独占。输出 NS2 身份时请改用 NS2 直连蓝牙输入，或选择其他输入手柄。"; return; }
             if (!ApplyBridgeConfiguration()) { VirtualState = ConfigurationResult; return; }
             inputGuard.Begin(gamepads.Latest.Devices, SelectedModeCard!.Profile.Mode);
             await output.StartAsync(SelectedModeCard.Profile.Mode, lifetime.Token);
             IsServerRunning = true;
-            if (!IsWindowsBridgeInput) { scanRequested = true; BeginScan(); }
+            if (CurrentInputKind == BridgeInputKind.Ns2Ble) { scanRequested = true; BeginScan(); }
             RefreshGamepads();
         }
         catch (Exception ex) { inputGuard.End(); VirtualState = $"虚拟设备启动失败：{ex.Message}"; AddLog("USB/IP", VirtualState); }
@@ -620,9 +627,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
               SelectedWindowsGamepad = WindowsGamepads.FirstOrDefault(x => x.Id == selected);
           }
           SyncTesterCards(devices);
+        UpdateMappingAvailability();
     }
     [RelayCommand] private async Task TestRumbleAsync()
     {
+        if (IsMappedTester && IsKeyboardMouseInput) { RumbleResult = "键鼠输入不支持振动"; return; }
         var settings = RumbleSettings.Create(RumbleLow, RumbleHigh, (double)RumbleDuration);
         try
         {
@@ -651,6 +660,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     [RelayCommand] private Task StopRumbleAsync()
     {
+        if (IsMappedTester && IsKeyboardMouseInput) return Task.CompletedTask;
         if (!IsWindowsTester && !(IsMappedTester && IsWindowsBridgeInput))
             transport.QueueRumble(Pro2OutputPacketMapper.BuildOrdinaryPacket(0, 0, "tester-stop"));
         return StopRumbleSafelyAsync(IsMappedTester && IsWindowsBridgeInput ? SelectedBridgeGamepad : SelectedWindowsGamepad);
@@ -664,6 +674,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     private GyroCalibration? CurrentCalibration => IsWindowsTester
         ? SelectedWindowsGamepad is { } pad ? gamepads.Calibration(pad.Id) : null
+        : IsMappedTester && IsKeyboardMouseInput ? null
         : IsMappedTester && IsWindowsBridgeInput ? SelectedBridgeGamepad is { } source ? gamepads.Calibration(source.Id) : null : bleCalibration;
     private void ResetTesterRate()
     {
@@ -685,6 +696,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             nextCandidateExpiryAt = now.AddSeconds(1);
         }
         if (now >= nextDevicesAt) { SyncGamepads(); nextDevicesAt = now.AddMilliseconds(250); }
+        UpdateKeyboardMouseTestState();
         if (scanRequested && now >= nextScanAt) BeginScan();
         ControllerState state;
         lock (frameGate) { state = lastFrame; RawSampleText = Convert.ToHexString(rawSample); }
@@ -853,6 +865,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (closing) return;
         closing = true; lifetime.Cancel(); connectionCancellation?.Cancel(); timer.Stop(); transport.StopScan(); Volatile.Write(ref acceptingFrames, 0);
+        keyboardMouse?.Dispose();
         rumbleTestCancellation?.Cancel();
         gamepads.FrameUpdated -= OnWindowsBridgeFrame; gamepads.ClearFeedback();
         if (connectingTask is not null) await connectingTask;
@@ -866,7 +879,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         if (disposed) return;
-        disposed = true; transport.Dispose(); connectionCancellation?.Dispose(); lifetime.Dispose();
+        disposed = true; keyboardMouse?.Dispose(); transport.Dispose(); connectionCancellation?.Dispose(); lifetime.Dispose();
     }
 }
 

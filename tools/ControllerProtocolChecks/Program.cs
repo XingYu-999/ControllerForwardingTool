@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Net.Sockets;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using ControllerForwardingTool.Core;
 using ControllerForwardingTool.Input;
@@ -14,6 +15,25 @@ void Check(bool value, string name)
     if (!value) throw new Exception(name);
     checks++;
 }
+// A selection pulse must stop on its own; a subsequent game's feedback must not inherit its timer.
+var selectionPlayback = new ControllerForwardingTool.Bluetooth.BleRumblePlayback();
+var selectionPulse = Pro2OutputPacketMapper.BuildOrdinaryPacket(64, 64, "input-identify") with
+    { PlaybackDuration = TimeSpan.FromMilliseconds(250), GainOverride = 1 };
+Check(selectionPlayback.Next(selectionPulse, TimeSpan.Zero) == selectionPulse, "selection pulse starts");
+Check(selectionPlayback.Next(null, TimeSpan.FromMilliseconds(249)) == selectionPulse, "selection pulse lasts until 250 ms");
+Check(selectionPlayback.Next(null, TimeSpan.FromMilliseconds(250)) is { Active: false }, "selection pulse stops at 250 ms");
+Check(selectionPlayback.Next(null, TimeSpan.FromMilliseconds(500)) is null, "selection pulse does not restart");
+selectionPlayback.Next(selectionPulse, TimeSpan.FromMilliseconds(600));
+var gameFeedback = Pro2OutputPacketMapper.BuildOrdinaryPacket(128, 128, "game");
+selectionPlayback.Next(gameFeedback, TimeSpan.FromMilliseconds(700));
+Check(selectionPlayback.Next(null, TimeSpan.FromSeconds(2)) == gameFeedback, "game feedback replaces selection timeout");
+selectionPlayback.Next(selectionPulse, TimeSpan.FromSeconds(3));
+selectionPlayback.Next(selectionPulse, TimeSpan.FromMilliseconds(3100));
+Check(selectionPlayback.Next(null, TimeSpan.FromMilliseconds(3250)) == selectionPulse, "another click restarts pulse duration");
+Check(selectionPlayback.Next(null, TimeSpan.FromMilliseconds(3350)) is { Active: false }, "repeated click still stops");
+selectionPlayback.Next(selectionPulse, TimeSpan.FromSeconds(4));
+selectionPlayback.Next(Pro2OutputPacketMapper.BuildOrdinaryPacket(0, 0, "input-switch"), TimeSpan.FromMilliseconds(4100));
+Check(selectionPlayback.Next(null, TimeSpan.FromMilliseconds(4200)) is null, "source switch cancels selection pulse");
 short Read(byte[] data, int at) => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(at));
 var source = ControllerState.Neutral(DateTimeOffset.Now) with
 {
@@ -128,7 +148,18 @@ await using (var session = new VirtualControllerSession())
     Check(session.Sent == 1, "NS1 diagnostics count actual reports");
 }
 checks += await Ns2UsbChecks.RunAsync();
-Console.WriteLine($"PASS: {checks} protocol, feedback, USB registration, and report-rate checks.");
+checks += KeyboardMouseChecks.Run();
+checks += AllInputMappingChecks.Run();
+checks += MappingCaptureChecks.Run();
+checks += QuickMappingChecks.Run();
+checks += HybridInputChecks.Run();
+checks += MappingEditorChecks.Run();
+checks += StickEditorChecks.Run();
+checks += MappingDraftChecks.Run();
+Console.WriteLine($"PASS: {checks} protocol, feedback, USB registration, keyboard/mouse, and report-rate checks.");
+
+if (args.Length == 2 && args[0] == "--render-hybrid-mapping") HybridMappingPreview.Render(args[1]);
+if (args.Length == 2 && args[0] == "--check-mapping-ui") MappingUiChecks.Run(args[1]);
 
 if (args.Length == 2 && args[0] == "--render")
 {
@@ -143,4 +174,43 @@ if (args.Length == 2 && args[0] == "--render")
         bitmap.Render(control); bitmap.Save(Path.Combine(args[1], $"{layout}.png"), PngBitmapEncoderOptions.Default);
     }
     Console.WriteLine("Rendered controller diagrams.");
+}
+if (args.Length == 2 && args[0] == "--render-keyboard")
+{
+    AppBuilder.Configure<Application>().UsePlatformDetect().SetupWithoutStarting();
+    Directory.CreateDirectory(args[1]);
+    foreach (int width in new[] { 1100, 760 })
+    {
+        var control = new KeyboardMouseControl { Width = width, Height = 360,
+            PressedKeys = ['W', 'J', 1, 5], SelectedKey = 'P', MouseDelta = new Vector(16, -12) };
+        control.Measure(new Size(width, 360)); control.Arrange(new Rect(0, 0, width, 360));
+        using var bitmap = new RenderTargetBitmap(new PixelSize(width, 360), new Vector(96, 96));
+        bitmap.Render(control); bitmap.Save(Path.Combine(args[1], $"keyboard-{width}.png"), PngBitmapEncoderOptions.Default);
+    }
+    Console.WriteLine("Rendered raised keyboard/mouse input states.");
+}
+if (args.Length == 2 && args[0] == "--render-quick-mapping")
+{
+    AppBuilder.Configure<ControllerForwardingTool.App>().UsePlatformDetect().SetupWithoutStarting();
+    Directory.CreateDirectory(args[1]);
+    foreach (bool keyboard in new[] { true, false })
+    {
+        // Render the real dialog without creating a live VM, connecting devices or opening a window.
+        var dialog = new QuickMappingDialog();
+        dialog.FindControl<TextBlock>("ProgressText")!.Text = keyboard ? "键盘 / 鼠标 · 第 1 / 25 项" : "手柄 → 手柄 · 第 1 / 19 项";
+        dialog.FindControl<TextBlock>("PromptText")!.Text = keyboard ? "请按下左摇杆 ↑映射源" : "请按下左摇杆映射源";
+        dialog.FindControl<TextBlock>("HintText")!.Text = keyboard
+            ? "请按一个源键；鼠标按键也可使用。分别为上、下、左、右录入一个方向键。"
+            : "先松开按键，并让摇杆回中。推动要使用的源摇杆，按钮和摇杆按下不能代替摇杆。";
+        var diagram = dialog.FindControl<ControllerTesterControl>("TargetDiagram")!;
+        diagram.Layout = ControllerLayout.SwitchPro; diagram.SelectedButton = ControllerButtons.LeftStick;
+        var content = (Avalonia.Controls.Control)dialog.Content!;
+        content.Measure(new Size(620, double.PositiveInfinity));
+        int height = (int)Math.Ceiling(content.DesiredSize.Height);
+        content.Arrange(new Rect(0, 0, 620, height));
+        using var bitmap = new RenderTargetBitmap(new PixelSize(620, height), new Vector(96, 96));
+        bitmap.Render(content); bitmap.Save(Path.Combine(args[1], keyboard ? "keyboard-wizard.png" : "controller-wizard.png"), PngBitmapEncoderOptions.Default);
+        dialog.Close();
+    }
+    Console.WriteLine("Rendered quick mapping dialogs.");
 }
