@@ -16,7 +16,8 @@ public static class AppIdentity
     public static string BuildTime { get; } = GetBuildTime();
     public static string AvaloniaVersion => GetProductVersion(typeof(Avalonia.Application).Assembly);
     public static string FrameworkLabel => $"Avalonia {AvaloniaVersion}  +  {RuntimeInformation.FrameworkDescription}";
-    public const string SourceCodeUrl = "";
+    public const string SourceCodeUrl = "https://github.com/XingYu-999/ControllerForwardingTool";
+    public static Uri SourceCodeUri { get; } = new(SourceCodeUrl);
 
     internal static string GetProductVersion(Assembly assembly) =>
         assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]

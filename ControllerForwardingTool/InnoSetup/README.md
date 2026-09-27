@@ -36,7 +36,7 @@ Startup 自启无法保证启动需要提权的程序，因此不能同时选择
 ## 构建
 
 先在 Visual Studio 使用 `ControllerForwardingTool.pubxml` 手动发布，目标目录为
-`D:\Temp\Publish\ControllerForwardingTool`，配置为 Release、win-x64、.NET 10 自包含文件夹发布。
+`D:\Temp\Publish\ControllerForwardingTool\Release`（当前配置的 `PublishDir`），配置为 Release、win-x64、.NET 10 自包含文件夹发布。`PublishUrl` 仍为父目录；使用 IDE 时请核对实际生成位置，安装脚本默认读取 `Release` 子目录。
 安装脚本直接读取该目录，不调用 `dotnet publish`，也不修改发布文件。
 
 发布完成后，用 Inno Setup 6.5.0+ 打开 `ControllerForwardingTool.iss` 并点击“编译”，
@@ -47,7 +47,7 @@ Startup 自启无法保证启动需要提权的程序，因此不能同时选择
 ```
 
 脚本检查主程序、自包含运行时、SDL、libusb、VIIPER 和 USB/IP 安装器是否存在。
-版本号读取主程序文件版本，输出为 `D:\Temp\Publish\ControllerForwardingTool-Setup-<版本>-x64.exe`。
+版本号读取主程序文件版本，输出为 `D:\Temp\Publish\ControllerForwardingTool\ControllerForwardingTool-Setup-<版本>-x64.exe`。
 
 临时使用其他手动发布目录时，可通过 `/DMyPublishDir` 覆盖默认值：
 

@@ -78,16 +78,33 @@
         <StackPanel IsVisible="{Binding IsBluetooth}" Spacing="14">
           <StackPanel Spacing="5">
             <TextBlock Classes="title" Text="NS2 Pro 连接" />
-            <TextBlock Classes="muted" Text="候选名称和厂商字段只能用于筛选；收到有效 FD2 输入后才确认输入正常。" />
-          </StackPanel>
-          <Border Classes="card">
-            <StackPanel Spacing="12">
-              <TextBlock Classes="section" Text="扫描与连接" />
+              <TextBlock Classes="muted" Text="通过 USB 数据线或蓝牙连接。USB 注册由你手动操作，注册后可拔线使用蓝牙。" />
+            </StackPanel>
+            <Border Classes="card">
+              <StackPanel Spacing="12">
+                <TextBlock Classes="section" Text="USB 连接与主机注册" />
+                <TextBlock Text="{Binding Ns2UsbStatus}" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding Ns2UsbDevices}" SelectedItem="{Binding SelectedNs2UsbDevice}" IsEnabled="{Binding !IsNs2UsbBusy}" HorizontalAlignment="Stretch" PlaceholderText="选择 USB 连接的 NS2 Pro" />
+                <TextBlock Text="{Binding Ns2UsbRegistrationStatus}" TextWrapping="Wrap" />
+                <WrapPanel>
+                  <Button Classes="primary" Margin="0,0,8,8" Content="注册到这台电脑" Command="{Binding RegisterNs2UsbCommand}" IsEnabled="{Binding CanRegisterNs2Usb}" />
+                  <Button Margin="0,0,8,8" Content="删除本机注册" Command="{Binding DeleteNs2UsbRegistrationCommand}" IsEnabled="{Binding CanDeleteNs2Usb}" />
+                  <Button Margin="0,0,8,8" Content="刷新注册状态" Command="{Binding InspectNs2UsbCommand}" IsEnabled="{Binding CanInspectNs2Usb}" />
+                  <Button Margin="0,0,8,8" Content="测试 USB 输入" Command="{Binding TestNs2UsbCommand}" IsEnabled="{Binding CanInspectNs2Usb}" />
+                </WrapPanel>
+                <TextBlock Classes="muted" Text="插线后只读取注册状态。点击注册才会写入电脑信息，可能替换手柄原来的主机配对；操作时输入会短暂停顿。" TextWrapping="Wrap" />
+                <TextBlock Classes="muted" Text="删除会移除手柄中的本机注册，之后可重新注册。若同时保存了其他主机，暂不支持单独删除本机。拔线回连需保持蓝牙和下方自动连接开启；无响应时按 L + R 唤醒。" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Ns2UsbInputText}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="12">
+                <TextBlock Classes="section" Text="蓝牙扫描与连接" />
               <TextBlock Text="{Binding AdapterState}" Classes="muted" />
               <TextBlock Text="{Binding Ns2BatteryText}" IsVisible="{Binding IsConnected}" FontWeight="SemiBold" />
               <TextBlock Text="{Binding ControllerStage}" Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" />
               <ToggleSwitch Content="自动连接（默认开启）" IsChecked="{Binding AutoConnect, Mode=TwoWay}" />
-              <ToggleSwitch Content="将电脑注册到手柄（默认关闭）" IsChecked="{Binding RegisterHostOnSync, Mode=TwoWay}" IsEnabled="{Binding CanChangeRegistration}" />
+                <ToggleSwitch Content="蓝牙 SYNC 连接时注册电脑（默认关闭）" IsChecked="{Binding RegisterHostOnSync, Mode=TwoWay}" IsEnabled="{Binding CanChangeRegistration}" />
               <TextBlock Classes="muted" Text="开启后，下次 SYNC 连接会把电脑注册到手柄，切回 NS2 可能需要重新配对。关闭不会撤销已有注册，也不影响已注册手柄回连。设置自动保存，连接过程中不可更改。" TextWrapping="Wrap" />
               <TextBlock Classes="muted" Text="{Binding RegistrationSettingsStatus}" TextWrapping="Wrap" />
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -104,7 +121,7 @@
                 </ListBox.ItemTemplate>
               </ListBox>
                 <TextBlock Classes="muted" Text="未连接设备在约 6 秒没有新广播后移出扫描列表；已连接过的手柄记录会保留。" TextWrapping="Wrap" />
-              <TextBlock Classes="muted" Text="首次请长按顶部 SYNC；自动连接开启时会自动连接。只有开启“将电脑注册到手柄”才会写入注册信息；已注册的手柄可直接尝试普通按键唤醒。" TextWrapping="Wrap" />
+                <TextBlock Classes="muted" Text="蓝牙首次连接请长按顶部 SYNC；已通过 USB 注册的手柄可尝试普通按键唤醒。USB 注册使用上方按钮，不受蓝牙注册开关控制。" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
           <Border Classes="card">
@@ -117,7 +134,7 @@
                       <DataTemplate>
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Margin="0,4">
                           <TextBlock Text="{Binding Summary}" Margin="8,6" VerticalAlignment="Center" TextWrapping="Wrap" />
-                          <Button Grid.Column="1" Content="删除" VerticalAlignment="Center"
+                            <Button Grid.Column="1" Content="忘记设备" VerticalAlignment="Center"
                                   Command="{Binding $parent[Window].DataContext.ForgetRememberedDeviceCommand}"
                                   CommandParameter="{Binding}" ToolTip.Tip="删除记录和名称、断开连接并取消 Windows 配对" />
                           <Button Grid.Column="2" Content="重命名" VerticalAlignment="Center"
@@ -137,12 +154,12 @@
                   </Grid>
                   <TextBlock Classes="muted" Text="{Binding RememberedAliasStatus}" TextWrapping="Wrap" />
                 </StackPanel>
-                <TextBlock Classes="muted" Text="删除会清除该手柄的记录和名称、断开连接并取消 Windows 配对。再次使用请长按顶部 SYNC；开启自动连接时会自动连接，关闭时可手动重新配对。" TextWrapping="Wrap" />
+                  <TextBlock Classes="muted" Text="忘记设备仅清除本地记录、名称及 Windows 配对，不清除手柄内部注册。要删除手柄中的本机注册，请通过 USB 连接后使用上方按钮。历史注册记录不代表当前手柄存储状态。" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
           <Border Classes="card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="section" Text="实时输入预览" />
+                <TextBlock Classes="section" Text="蓝牙实时输入预览" />
               <TextBlock Classes="muted" Text="{Binding BleConnectionTiming}" TextWrapping="Wrap" />
               <TextBlock Text="{Binding ControllerStateText}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
               <TextBlock Text="{Binding LastInputText}" Classes="muted" />

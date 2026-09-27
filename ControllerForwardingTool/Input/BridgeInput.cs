@@ -49,6 +49,17 @@ public sealed class ControllerInputBridge(Action<ControllerState> publish, Func<
     private readonly object gate = new();
     private BridgeInputKind kind;
     private GamepadDevice? device;
+    private GamepadDevice? ns2Usb;
+    private bool usbLive;
+    public void SelectNs2Usb(GamepadDevice? pad)
+    {
+        lock (gate)
+        {
+            if (ns2Usb?.Id == pad?.Id) return;
+            ns2Usb = pad; usbLive = false;
+            if (kind == BridgeInputKind.Ns2Ble) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
+        }
+    }
     private BridgeComparison comparison = new(ControllerState.Neutral(DateTimeOffset.MinValue), ControllerState.Neutral(DateTimeOffset.MinValue));
     public BridgeComparison Comparison => Volatile.Read(ref comparison);
     public ControllerState Latest => Comparison.Output;
@@ -58,7 +69,7 @@ public sealed class ControllerInputBridge(Action<ControllerState> publish, Func<
     }
     public void Ble(ControllerState state, StickProfile? profile)
     {
-        lock (gate) if (kind == BridgeInputKind.Ns2Ble)
+        lock (gate) if (kind == BridgeInputKind.Ns2Ble && !usbLive)
         {
             var config = options();
             Emit(StickMath.Apply(config.Ns2Buttons.Apply(state), profile, config), state);
@@ -66,20 +77,25 @@ public sealed class ControllerInputBridge(Action<ControllerState> publish, Func<
     }
     public void DisconnectBle()
     {
-        lock (gate) if (kind == BridgeInputKind.Ns2Ble) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
+        lock (gate) if (kind == BridgeInputKind.Ns2Ble && !usbLive) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
     }
     public void Windows(GamepadFrame frame, double now)
     {
         lock (gate)
         {
-            if (kind != BridgeInputKind.WindowsGamepad) return;
-            if (device is null || now - frame.At > .25 || now < frame.At || !frame.Inputs.TryGetValue(device.Id, out var input) ||
-                !frame.Devices.Any(d => d.Id == device.Id) || !input.Standard)
-            { if (Latest.ReceivedAt != DateTimeOffset.MinValue) Emit(ControllerState.Neutral(DateTimeOffset.MinValue)); return; }
-            var state = WindowsInputMapper.Map(device, input, motion(device.Id), DateTimeOffset.Now);
+            var source = kind == BridgeInputKind.Ns2Ble ? ns2Usb : device;
+            if (source is null || now - frame.At > .25 || now < frame.At || !frame.Inputs.TryGetValue(source.Id, out var input) ||
+                !frame.Devices.Any(d => d.Id == source.Id) || !input.Standard)
+            {
+                if (kind == BridgeInputKind.WindowsGamepad || usbLive)
+                    if (Latest.ReceivedAt != DateTimeOffset.MinValue) Emit(ControllerState.Neutral(DateTimeOffset.MinValue));
+                usbLive = false; return;
+            }
+            usbLive = kind == BridgeInputKind.Ns2Ble;
+            var state = WindowsInputMapper.Map(source, input, motion(source.Id), DateTimeOffset.Now);
             var config = options();
             var raw = state;
-            if (device.Layout == ControllerLayout.Switch2Pro) state = config.Ns2Buttons.Apply(state);
+            if (source.Layout == ControllerLayout.Switch2Pro) state = config.Ns2Buttons.Apply(state);
             Emit(StickMath.Apply(state, null, config), raw);
         }
     }

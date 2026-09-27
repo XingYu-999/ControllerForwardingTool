@@ -11,20 +11,20 @@ internal static class Ns2PairingProtocol
     internal static bool MatchesReply(ReadOnlySpan<byte> response, byte command, byte subcommand) =>
         response.Length >= 4 && response[0] == command && response[2] == 1 && response[3] == subcommand;
 
-    internal static byte[] Packet(byte subcommand, ReadOnlySpan<byte> payload)
+    internal static byte[] Packet(byte subcommand, ReadOnlySpan<byte> payload, byte transport = 1)
     {
         if (payload.Length > 255) throw new ArgumentOutOfRangeException(nameof(payload));
         byte[] packet = new byte[8 + payload.Length];
-        packet[0] = 0x15; packet[1] = 0x91; packet[2] = 1; packet[3] = subcommand;
+        packet[0] = 0x15; packet[1] = 0x91; packet[2] = transport; packet[3] = subcommand;
         packet[5] = (byte)payload.Length;
         payload.CopyTo(packet.AsSpan(8));
         return packet;
     }
 
-    internal static byte[] ValidateReply(byte[] response, byte subcommand, int payloadLength)
+    internal static byte[] ValidateReply(byte[] response, byte subcommand, int payloadLength, byte transport = 1)
     {
-        if (!MatchesReply(response, 0x15, subcommand) || response.Length < 8 + payloadLength ||
-            response[1] != 1 || response[5] != 0x78 || response[8] != 1)
+        if (response.Length < 8 + payloadLength || response[0] != 0x15 || response[2] != transport || response[3] != subcommand ||
+            response[1] != 1 || response[5] != (transport == 0 ? 0xF8 : 0x78) || response[8] != 1)
             throw new InvalidOperationException($"主机注册 15/{subcommand:X2} 回复无效或被拒绝（长度 {response.Length}）");
         return response.AsSpan(8, payloadLength).ToArray();
     }
@@ -66,27 +66,30 @@ internal static class Ns2PairingProtocol
     }
 
     internal static async Task<BleHostRegistration> RegisterAsync(ulong host, ulong controller,
-        Func<byte[], CancellationToken, Task<byte[]>> exchange, Action<string> progress, CancellationToken token)
+        Func<byte[], CancellationToken, Task<byte[]>> exchange, Action<string> progress, CancellationToken token,
+        byte transport = 1, Action<ulong>? controllerDiscovered = null)
     {
-        if (!IsAddress(controller)) throw new ArgumentException("手柄蓝牙地址无效");
-        byte[] addressPacket = Packet(1, AddressPayload(host));
+        if (transport > 1 || (!IsAddress(controller) && !(transport == 0 && controller == 0))) throw new ArgumentException("手柄蓝牙地址无效");
+        byte[] addressPacket = Packet(1, AddressPayload(host), transport);
         byte[] hostKey = RandomNumberGenerator.GetBytes(16), challenge = RandomNumberGenerator.GetBytes(16);
         byte[]? deviceKey = null, expected = null;
         try
         {
             token.ThrowIfCancellationRequested();
             progress("正在注册主机：交换蓝牙地址（1/4）");
-            byte[] addressReply = ValidateReply(await exchange(addressPacket, token), 1, 9);
-            if (addressReply[2] != 1 || ReadAddress(addressReply.AsSpan(3, 6)) != controller)
+            byte[] addressReply = ValidateReply(await exchange(addressPacket, token), 1, 9, transport);
+            ulong returnedAddress = ReadAddress(addressReply.AsSpan(3, 6));
+            if (addressReply[2] != 1 || !IsAddress(returnedAddress) || (controller != 0 && returnedAddress != controller))
                 throw new InvalidOperationException("主机注册地址回复与当前手柄不匹配，已中止");
+            controllerDiscovered?.Invoke(returnedAddress);
 
             token.ThrowIfCancellationRequested();
             progress("正在注册主机：交换密钥（2/4）");
-            deviceKey = ValidateReply(await exchange(Packet(4, WithPrefix(hostKey)), token), 4, 17)[1..];
+            deviceKey = ValidateReply(await exchange(Packet(4, WithPrefix(hostKey), transport), token), 4, 17, transport)[1..];
 
             token.ThrowIfCancellationRequested();
             progress("正在注册主机：验证密钥挑战（3/4）");
-            byte[] answer = ValidateReply(await exchange(Packet(2, WithPrefix(challenge)), token), 2, 17);
+            byte[] answer = ValidateReply(await exchange(Packet(2, WithPrefix(challenge), transport), token), 2, 17, transport);
             expected = Confirmation(hostKey, deviceKey, challenge);
             if (!CryptographicOperations.FixedTimeEquals(expected, answer.AsSpan(1)))
                 throw new InvalidOperationException("主机注册挑战验证失败，未提交注册");
@@ -94,7 +97,7 @@ internal static class Ns2PairingProtocol
             token.ThrowIfCancellationRequested();
             progress("正在注册主机：保存到手柄（4/4）");
             // Do not automatically resend this commit: a missing ACK is ambiguous.
-            ValidateReply(await exchange(Packet(3, new byte[] { 0 }), token), 3, 1);
+            ValidateReply(await exchange(Packet(3, new byte[] { 0 }, transport), token), 3, 1, transport);
             token.ThrowIfCancellationRequested();
             return new(host, DateTimeOffset.UtcNow);
         }

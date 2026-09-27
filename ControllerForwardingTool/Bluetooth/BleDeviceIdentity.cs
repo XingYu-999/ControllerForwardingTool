@@ -16,7 +16,7 @@ public sealed record BleDeviceIdentity(ulong Address, BluetoothAddressType Addre
     public string? Alias { get; init; }
     [JsonIgnore]
     public string Summary => $"{(Alias ?? (string.IsNullOrWhiteSpace(Name) ? "NS2 Pro" : Name))} · ••:{Address & 0xFFFF:X4} · {AddressType}" +
-        (Registration is { IsValid: true } ? " · 主机注册已确认" : " · 尚未确认主机注册");
+        (Registration is { IsValid: true } ? " · 曾确认主机注册" : " · 尚未确认主机注册");
 
     public bool Matches(ulong address, BluetoothAddressType type) =>
         IsValid && Address == address && AddressType == type;

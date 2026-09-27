@@ -127,7 +127,8 @@ await using (var session = new VirtualControllerSession())
     while (session.Sent == 0) await Task.Delay(1, timeout.Token);
     Check(session.Sent == 1, "NS1 diagnostics count actual reports");
 }
-Console.WriteLine($"PASS: {checks} protocol, feedback, and report-rate checks.");
+checks += await Ns2UsbChecks.RunAsync();
+Console.WriteLine($"PASS: {checks} protocol, feedback, USB registration, and report-rate checks.");
 
 if (args.Length == 2 && args[0] == "--render")
 {

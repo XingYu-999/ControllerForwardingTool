@@ -11,6 +11,7 @@ public sealed class GamepadMonitor : IAsyncDisposable
     private readonly CancellationTokenSource shutdown = new();
     private readonly AutoResetEvent wake = new(false);
     private readonly ConcurrentQueue<(Func<SdlGamepadService, string> Action, TaskCompletionSource<string> Result, double Deadline)> commands = new();
+    private readonly ConcurrentQueue<Action<SdlGamepadService>> usbCommands = new();
     private readonly ConcurrentDictionary<uint, GyroCalibration> calibrations = new();
     private readonly TaskCompletionSource finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private GamepadFrame latest = new([], new Dictionary<uint, GamepadSnapshot>(), "正在启动手柄输入服务…", 0);
@@ -46,6 +47,27 @@ public sealed class GamepadMonitor : IAsyncDisposable
     public GamepadSnapshot? Read(GamepadDevice device) => GyroCalibration.Now - Latest.At < .5 && Latest.Inputs.TryGetValue(device.Id, out var frame) ? frame : null;
     public Task<string> RumbleAsync(GamepadDevice? device, RumbleSettings settings) => Enqueue(s => s.Rumble(device, settings));
     public Task<string> StopRumbleAsync(GamepadDevice? device) => Enqueue(s => { s.StopRumble(device); return "震动已停止"; });
+    internal Task<T> WithNs2UsbReleasedAsync<T>(Func<T> action, CancellationToken token)
+    {
+        var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (shutdown.IsCancellationRequested || finished.Task.IsCompleted) throw new InvalidOperationException("输入服务已关闭");
+        usbCommands.Enqueue(service =>
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                service.EnableNs2Usb(false);
+                service.Refresh();
+                Volatile.Write(ref latest, new([], new Dictionary<uint, GamepadSnapshot>(), "正在操作 USB 注册信息…", GyroCalibration.Now));
+                FrameUpdated?.Invoke(Latest);
+                completion.TrySetResult(action());
+            }
+            catch (Exception ex) { completion.TrySetException(ex); }
+            finally { service.EnableNs2Usb(Volatile.Read(ref ns2Enabled)); }
+        });
+        wake.Set();
+        return completion.Task.WaitAsync(token);
+    }
     private Task<string> Enqueue(Func<SdlGamepadService, string> action)
     {
         if (shutdown.IsCancellationRequested || finished.Task.IsCompleted) return Task.FromResult("输入服务已关闭");
@@ -69,6 +91,7 @@ public sealed class GamepadMonitor : IAsyncDisposable
             {
                 bool requested = Volatile.Read(ref ns2Enabled);
                 if (requested != enabled) { service.EnableNs2Usb(requested); enabled = requested; nextRefresh = 0; }
+                while (usbCommands.TryDequeue(out var operation)) { operation(service); nextRefresh = 0; }
                 if (GyroCalibration.Now >= nextRefresh || Interlocked.Exchange(ref refreshRequested, 0) != 0)
                 {
                     devices = service.Refresh(); nextRefresh = GyroCalibration.Now + 1;

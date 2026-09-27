@@ -15,6 +15,8 @@ public sealed record BridgeOptions
     public BleDeviceHistory BleDevices { get; init; } = new();
     // Opt in to changing the host registration stored inside the controller.
     public bool RegisterHostOnSync { get; init; }
+    // USB serial -> controller Bluetooth address, learned only from a verified registration exchange.
+    public Dictionary<string, ulong> Ns2UsbAddresses { get; init; } = [];
     public Ns2ButtonMapping Ns2Buttons { get; init; } = new();
     // Zero follows source frames, -1 uses the target USB reference rate; positive values are fixed rates.
     public int PushHz { get; init; }
@@ -78,6 +80,7 @@ public sealed record BridgeOptions
         InputKind = Enum.IsDefined(InputKind) ? InputKind : BridgeInputKind.Ns2Ble,
         LastBleDevice = null,
         BleDevices = NormalizeBleDevices(),
+        Ns2UsbAddresses = (Ns2UsbAddresses ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Key) && Ns2PairingProtocol.IsAddress(p.Value)).ToDictionary(),
         Ns2Buttons = (Ns2Buttons ?? new()).Normalize(),
         PushHz = PushHz is -1 or 0 or 66 or 125 or 250 ? PushHz : 0,
         ApiPort = ApiPort is >= 1024 and <= 65535 ? ApiPort : 0,

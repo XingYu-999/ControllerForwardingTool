@@ -215,7 +215,7 @@ public partial class MainViewModel
         BridgeCountsText = $"发送 {output.Sent:N0} · 主机反馈 {output.FeedbackCount:N0}";
         BridgeFeedbackText = output.FeedbackState;
         BridgeRumbleText = IsWindowsBridgeInput ? gamepads.FeedbackStatus : $"{(transport.CanRumble ? "BLE 震动通道已就绪" : "BLE 震动特征未就绪")} · 写入 {transport.RumbleWrites:N0} / 失败 {transport.RumbleFailures:N0}";
-        lock (frameGate) BridgeInputText = IsWindowsBridgeInput ? BridgeSourceStatus : IsConnected ? $"FD2 最近输入距今 {Math.Max(0, (now - lastFrame.ReceivedAt).TotalMilliseconds):F0} ms · {ControllerStage}" : "未连接实体 NS2 BLE；虚拟输出保持中立状态";
+        lock (frameGate) BridgeInputText = IsWindowsBridgeInput ? BridgeSourceStatus : IsNs2UsbConnected ? Ns2UsbStatus : IsConnected ? $"FD2 最近输入距今 {Math.Max(0, (now - lastFrame.ReceivedAt).TotalMilliseconds):F0} ms · {ControllerStage}" : "未连接实体 NS2 USB / 蓝牙；虚拟输出保持中立状态";
         DeviceEnumerationText = WindowsGamepads.Count == 0 ? "尚无 Windows 手柄" : string.Join("\n", WindowsGamepads.Select(d => d.ToString()));
         StickCalibrationText = stickCalibration.ReadStatus(); OnPropertyChanged(nameof(CanCalibrateSticks));
         if (IsServerRunning && bridgeOptions.AudioGuard && output.Mode is VirtualControllerMode.DualSense or VirtualControllerMode.DualSenseEdge && now >= audioGuardAt)

@@ -14,10 +14,15 @@ try
     Assert(BridgeOptions.Load(newPath, oldPath).RumbleGain == 1 && !File.Exists(newPath), "First launch defaults");
 
     var settings = new BridgeOptions { RumbleGain = 2.5, ApiPort = 4242,
+        Ns2UsbAddresses = new() { ["physical-serial"] = 0x98E255C21688 },
         StickProfiles = new() { ["controller"] = new([2048, 2048, 2048, 2048], [0, 0, 0, 0], [4095, 4095, 4095, 4095]) } };
     string original = JsonSerializer.Serialize(settings);
     File.WriteAllText(oldPath, original);
     BridgeOptions migrated = BridgeOptions.Load(newPath, oldPath);
+    Assert(migrated.Ns2UsbAddresses.GetValueOrDefault("physical-serial") == 0x98E255C21688,
+        "USB serial and Bluetooth identity survive settings round trip");
+    Assert((settings with { Ns2UsbAddresses = null! }).Normalize().Ns2UsbAddresses.Count == 0,
+        "Missing USB identities normalize safely");
     Assert(migrated.RumbleGain == 2.5 && migrated.ApiPort == 4242 && migrated.StickProfiles["controller"].Valid,
         "Calibration and settings retained");
     Assert(File.ReadAllText(newPath) == original && File.ReadAllText(oldPath) == original, "Migration preserves old file");

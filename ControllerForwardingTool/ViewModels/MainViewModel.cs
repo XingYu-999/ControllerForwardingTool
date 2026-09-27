@@ -108,14 +108,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsAbout => SelectedPage == "关于";
     public bool IsTester => SelectedPage == "手柄测试";
     public bool IsWindowsTester => SelectedTesterSource.StartsWith("Windows", StringComparison.Ordinal);
-    public bool CanConnect => SelectedCandidate is not null && !IsConnecting && !IsConnected && !IsForgettingDevice;
+    public bool CanConnect => SelectedCandidate is not null && !IsConnecting && !IsConnected && !IsForgettingDevice && !IsNs2UsbConnected && !IsNs2UsbBusy;
     public bool CanStopConnecting => AutoConnect || IsScanning || IsConnecting;
     public string ConnectActionText => SelectedCandidate is { } candidate && !bridgeOptions.BleDevices.AllowsAutoConnect(candidate)
         ? "重新配对选中设备" : "连接选中设备";
     public bool CanStartVirtual => !IsVirtualBusy && !IsInstallingDriver && !IsServerRunning && driverReady && (!IsWindowsBridgeInput || SelectedBridgeGamepad is not null);
     public bool IsDriverReady => driverReady;
     public string TesterBackend => gamepads.Status;
-    public string ConnectionStatusLabel => IsConnected ? "NS2 Pro 已连接"
+    public string ConnectionStatusLabel => IsNs2UsbConnected ? "NS2 Pro · USB 已连接" : IsConnected ? "NS2 Pro · 蓝牙已连接"
         : IsConnecting ? "NS2 Pro 连接中"
         : IsScanning ? "正在搜索 NS2 Pro"
         : "NS2 Pro 未连接";
@@ -251,6 +251,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (disconnecting || closing || IsConnecting || IsConnected) return;
         Candidates.Clear(); SelectedCandidate = null;
+        if (!IsNs2UsbConnected) usbHandoverAddress = 0;
         connectionFailures.Clear();
         transport.StopScan(); IsScanning = false;
         scanRequested = true; BeginScan(); SelectedPage = "NS2 Pro 连接";
@@ -303,8 +304,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     [RelayCommand] private Task ConnectAsync()
     {
-        if (closing || disconnecting || SelectedCandidate is null || IsConnecting || IsConnected) return Task.CompletedTask;
-        var candidate = SelectedCandidate;
+        if (closing || disconnecting || !CanConnect || SelectedCandidate is not { } candidate) return Task.CompletedTask;
         if (!BleCandidateLifetime.IsVisible(candidate, DateTimeOffset.Now, activeBleCandidate, IsConnected))
         {
             RemoveCandidate(candidate);
@@ -318,6 +318,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return Task.CompletedTask;
         }
         scanRequested = true;
+        usbHandoverAddress = candidate.Address;
         connectingTask = ConnectCandidateAsync(candidate);
         return connectingTask;
     }
@@ -512,6 +513,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (i >= 0) Candidates[i] = candidate;
         else { if (Candidates.Count >= 32) Candidates.RemoveAt(0); Candidates.Add(candidate); }
         if (wasSelected || SelectedCandidate is null) SelectedCandidate = candidate;
+        if (IsNs2UsbConnected || IsNs2UsbBusy || (usbHandoverAddress != 0 && candidate.Address != usbHandoverAddress)) return;
         if (!BleAutoConnectPolicy.CanAttempt(candidate, bridgeOptions.BleDevices, AutoConnect, IsConnected, IsConnecting,
             connectionFailures.GetValueOrDefault((candidate.Address, candidate.AddressType)), DateTimeOffset.Now)) return;
         if (candidate.Advertisement?.TargetsOtherHost(transport.LocalAddress) == true)
@@ -562,7 +564,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             VirtualState = "正在创建虚拟 USB…";
             if (IsWindowsBridgeInput && (SelectedBridgeGamepad is not { } source || !inputGuard.Allows(source) || gamepads.Read(source) is null))
             { VirtualState = "输入设备未就绪，请选择已连接的实体手柄"; return; }
-            if (IsWindowsBridgeInput && SelectedBridgeGamepad?.Layout == ControllerLayout.Switch2Pro && SelectedModeCard!.Profile.Mode == VirtualControllerMode.Ns2Pro)
+            if ((IsWindowsBridgeInput && SelectedBridgeGamepad?.Layout == ControllerLayout.Switch2Pro || !IsWindowsBridgeInput && IsNs2UsbConnected) && SelectedModeCard!.Profile.Mode == VirtualControllerMode.Ns2Pro)
             { VirtualState = "NS2 USB 测试接口需要独占。输出 NS2 身份时请改用 NS2 直连蓝牙输入，或选择其他输入手柄。"; return; }
             if (!ApplyBridgeConfiguration()) { VirtualState = ConfigurationResult; return; }
             inputGuard.Begin(gamepads.Latest.Devices, SelectedModeCard!.Profile.Mode);
@@ -610,7 +612,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     private void SyncGamepads()
     {
-        var devices = gamepads.Latest.Devices; SyncBridgeInputs(devices); uint? selected = SelectedWindowsGamepad?.Id;
+          var devices = gamepads.Latest.Devices; SyncBridgeInputs(devices); SyncNs2Usb(devices); uint? selected = SelectedWindowsGamepad?.Id;
         OnPropertyChanged(nameof(TesterBackend));
         if (!WindowsGamepads.SequenceEqual(devices))
         {

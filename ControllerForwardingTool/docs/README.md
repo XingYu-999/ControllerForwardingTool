@@ -1,47 +1,59 @@
-# 手柄转发工具 / Controller Forwarding Tool 开发文档
+# 协议研究与迭代记录索引
 
-目标项目：`D:\github\NS2ProWin11\ControllerForwardingTool`（.NET 10 / Avalonia 12）。程序将 Switch 2 Pro BLE 或 Windows 标准映射手柄输入转发为 Nintendo / Xbox / PS5 / Edge 虚拟 USB，并提供多类型手柄测试。当前采用 SDL、VIIPER 与 usbip-win2 开源组件，保留来源和许可证。
+当前实现说明统一从[根目录 docs](../../docs/README.md)进入。本目录保留阶段记录，供设计背景和历史问题追踪使用。手柄协议正文及原始研究已集中到[协议目录](../../docs/protocols/README.md)，旧文件名仅保留跳转入口。
 
-| 文件 | 用途 |
+| 当前主题 | 文档 |
 | --- | --- |
-| [01_BLE_TO_NS1_IMPLEMENTATION.md](01_BLE_TO_NS1_IMPLEMENTATION.md) | 架构、实施阶段、接口、验收与风险 |
-| [02_NS2_PRO_PROTOCOL_REFERENCE.md](02_NS2_PRO_PROTOCOL_REFERENCE.md) | NS2 Pro 输入端的公开资料核查和非官方协议观察 |
-| [03_NS1_PRO_PROTOCOL_REFERENCE.md](03_NS1_PRO_PROTOCOL_REFERENCE.md) | NS1 Pro 输出端的公开资料核查和非官方协议观察 |
-| [04_DRIVER_AND_LICENSE.md](04_DRIVER_AND_LICENSE.md) | 已复制驱动安装器的来源、哈希、许可证及使用边界 |
-| [05_UI_DESIGN_RULES.md](05_UI_DESIGN_RULES.md) | 手柄转发工具的页面结构、视觉令牌、连接状态与交互验收规范 |
-| [06_PROTOTYPE_STATUS.md](06_PROTOTYPE_STATUS.md) | 当前代码原型、可运行检查与未验证边界 |
-| [07_CONNECTION_AND_VIRTUAL_USB.md](07_CONNECTION_AND_VIRTUAL_USB.md) | 自动连接、测试页、虚拟输出和驱动入口的操作说明 |
-| [08_TESTER_CALIBRATION_AND_STABILITY.md](08_TESTER_CALIBRATION_AND_STABILITY.md) | 型号布局、陀螺仪校准、震动配置与 NS1 卡死修复 |
-| [09_ARENA_AND_CONTROLLER_LAB.md](09_ARENA_AND_CONTROLLER_LAB.md) | r3 浅色工作台、图片模式卡片、反馈转码、配置和验证边界 |
-| [10_TRIGGER_READOUT_AND_OVERVIEW.md](10_TRIGGER_READOUT_AND_OVERVIEW.md) | r4 线性扳机显示、读数布局、驱动快捷面板与纵向概览 |
-| [11_MOTION_CALIBRATION_AND_PUBLISH.md](11_MOTION_CALIBRATION_AND_PUBLISH.md) | r5 Steam 风格手柄布局、三轴姿态、手动/自动陀螺仪校准及精简发布 |
-| [12_MULTI_CONTROLLER_INPUT.md](12_MULTI_CONTROLLER_INPUT.md) | r6 Y 轴修复、Windows 手柄作为输入、映射与功能缺失策略、跨型号回读验证 |
-| [13_XBOX_CONTROLLER_PROTOCOL.md](13_XBOX_CONTROLLER_PROTOCOL.md) | Xbox XInput 与 360 USB / One、Series GIP / 蓝牙 HID 的通信格式和来源 |
-| [14_PS5_CONTROLLER_PROTOCOL.md](14_PS5_CONTROLLER_PROTOCOL.md) | DualSense USB / 蓝牙 HID、CRC、IMU 校准、输出与能力边界 |
-| [17_NS2_WAKE_RECONNECT.md](17_NS2_WAKE_RECONNECT.md) | NS2 设备记忆、唤醒回连、广播诊断与实机验收步骤 |
-| [18_NS2_HOST_REGISTRATION_PROPOSAL.md](18_NS2_HOST_REGISTRATION_PROPOSAL.md) | L + R 失败诊断、本地名称、有限重试与待授权主机注册方案 |
-| [19_SYNC_RECOVERY_AND_USER_DATA.md](19_SYNC_RECOVERY_AND_USER_DATA.md) | 撤销误拦截 SYNC 的条件、配置与日志入口、用户目录持久化 |
+| 数据流、模块和线程 | [架构说明](../../docs/01_ARCHITECTURE.md) |
+| 连接、注册、测试与排障 | [使用指南](../../docs/02_USER_GUIDE.md) |
+| 线路配置、用户数据和桌面生命周期 | [配置说明](../../docs/03_CONFIGURATION_AND_LIFECYCLE.md) |
+| 现存检查工程和发布命令 | [构建与验证](../../docs/04_BUILD_AND_VALIDATION.md) |
 
-**来源边界：**02 / 03 的 Nintendo 报文和 13 / 14 的 Xbox / PS5 硬件报文主要来自开源实现与逆向资料，不是厂商完整协议或认证声明。微软 XInput 文档仅定义应用接口。各协议文档均标明来源、版本/核查日期，不将某次观察当作跨固件标准。
+## 历史文档目录
 
-更新日期：2026-09-26。r6 使用本机已安装 USB/IP 完成 Xbox → NS1、NS1 → NS2、Xbox → PS5、PS5 → Xbox 的合成输入与 Windows 实际回读验证。实体手柄固件、无线稳定性和具体游戏仍需实测。历次状态文档保留当时验证边界，最新结果以 12 为准；安装器随包提供不等于已安装驱动。
+| 文件 | 主题与阅读说明 |
+| --- | --- |
+| [01 BLE → NS1 实施方案](01_BLE_TO_NS1_IMPLEMENTATION.md) | 最初设计与接口建议，不是当前架构清单 |
+| [02 NS2 协议参考](../../docs/protocols/NS2_PRO.md) | 公开研究、输入格式与资料来源 |
+| [03 NS1 协议参考](../../docs/protocols/NS1_PRO.md) | HID、子命令和虚拟设备边界 |
+| [04 驱动与许可](04_DRIVER_AND_LICENSE.md) | 随附组件来源、哈希与许可记录 |
+| [05 UI 设计规则](05_UI_DESIGN_RULES.md) | 页面与视觉规范的设计背景 |
+| [06 原型状态](06_PROTOTYPE_STATUS.md) | 早期实现及各阶段验证，不能作为当前未实现清单 |
+| [07 连接与虚拟 USB](07_CONNECTION_AND_VIRTUAL_USB.md) | 早期连接流程；当前操作请看使用指南 |
+| [08 测试、校准与稳定性](08_TESTER_CALIBRATION_AND_STABILITY.md) | 手柄布局、静置校准及 NS1 卡死修复 |
+| [09 浅色工作台](09_ARENA_AND_CONTROLLER_LAB.md) | r3 多身份输出与反馈处理 |
+| [10 扳机与概览](10_TRIGGER_READOUT_AND_OVERVIEW.md) | r4 扳机行程和界面流程 |
+| [11 体感与发布](11_MOTION_CALIBRATION_AND_PUBLISH.md) | r5 姿态、校准与运行包精简 |
+| [12 多类型输入](12_MULTI_CONTROLLER_INPUT.md) | r6 Windows 源和历史合成回读验证 |
+| [13 Xbox 协议](../../docs/protocols/XBOX.md) | XInput、USB/GIP 与蓝牙资料 |
+| [14 PS5 协议](../../docs/protocols/PS5.md) | DualSense/Edge 的 HID、CRC、IMU 和能力边界 |
+| [15 产品图片](15_CONTROLLER_PRODUCT_IMAGES.md) | 输出卡片素材来源 |
+| [16 NS1 体感与震动](16_NS1_MOTION_RUMBLE_AND_REPORT_RATE.md) | 已实现 IMU/震动回传及报告率修复，更新早期原型边界 |
+| [17 NS2 唤醒回连](17_NS2_WAKE_RECONNECT.md) | 历史地址探测方案，后续改为广播触发 |
+| [18 主机注册提案](18_NS2_HOST_REGISTRATION_PROPOSAL.md) | 历史待实现方案；实现见 23、开关见 24 |
+| [19 SYNC 与用户数据](19_SYNC_RECOVERY_AND_USER_DATA.md) | 广播过滤恢复、配置与日志入口 |
+| [20 GATT 与遗忘](20_BLE_SESSION_RECOVERY_AND_FORGET.md) | 会话释放、删除历史和系统配对清理 |
+| [21 回连调查与列表](21_NS2_RECONNECT_RESEARCH_AND_LIST_UI.md) | 回连机制研究和列表修复 |
+| [22 SYNC 连接时序](22_SYNC_AUTO_CONNECT_TIMING.md) | 新鲜广播、失败冷却及串行连接 |
+| [23 主机注册实现](23_NS2_HOST_REGISTRATION.md) | 四阶段交换、校验及历史验证记录 |
+| [24 注册开关与 BLE 速率](24_REGISTRATION_SWITCH_AND_BLE_RATE.md) | 默认关闭注册、连接间隔请求 |
+| [25 按键映射](25_BUTTON_MAPPING_AND_PREVIEW.md) | NS2 自定义映射与预览 |
+| [26 映射对照与电量](26_MAPPING_COMPARISON_AND_BATTERY.md) | 图形对照与电量档位 |
+| [27 源帧发送与测试卡片](27_SOURCE_PACING_AND_TESTER_CARDS.md) | 输出节奏；测试卡片行为后由根目录 28 更新 |
+| [28 独立输出线路](28_OUTPUT_ROUTE_SETTINGS.md) | 五条线路、草稿隔离和迁移 |
+| [根目录 28 手柄发现与持续振动](../../docs/28_TESTER_DISCOVERY_AND_SUSTAINED_RUMBLE.md) | 当前发现列表、折叠映射参考区和持续马达反馈 |
 
-## r7 / r8 名称与旧版兼容
+## 已被后续实现替代的说明
 
-中文名称：**手柄转发工具**；英文名称：**Controller Forwarding Tool**。窗口、侧栏、关于页、应用元数据、诊断标题和发布包使用新名称；EXE / 主程序集为 `ControllerForwardingTool.exe` / `ControllerForwardingTool.dll`。Visual Studio 默认发布目标更新为 `D:\Temp\Publish\ControllerForwardingTool`。
+- 主机注册已实现，且由默认关闭的 `RegisterHostOnSync` 控制；“完整注册待授权”仅属于历史提案。
+- NS1 输出已经支持 IMU 和震动转码；“IMU 中立、震动未实现”只描述早期原型。
+- 测试页上方是实际连接列表，下方五种身份始终为映射参考，不自动切换为真实回读。
+- 数据目录为 `%LOCALAPPDATA%\ControllerForwardingTool`；旧 `NS2ProWin11` 目录仅用于兼容导入，不是当前保存位置。
+- 删除 BLE 历史会断开匹配的当前连接并尝试清理 Windows 配对；旧“保留当前连接”描述已过时。
+- 当前检查工程位于 `tools/`。旧测试数量、发布路径和渲染命令保留为阶段记录，可运行范围见构建文档。
 
-r8 的解决方案为 `ControllerForwardingTool.slnx`，项目为 `ControllerForwardingTool/ControllerForwardingTool.csproj`，根命名空间为 `ControllerForwardingTool`。图标资源与 `ControllerForwardingTool.pubxml` 发布配置也同步改名，Visual Studio 上次选择的发布配置引用已更新。请重新打开新解决方案。
+## 来源和证据边界
 
-Visual Studio 发布配置的 `PublishDir` / `PublishUrl` 均为 `D:\Temp\Publish\ControllerForwardingTool\`；脚本发布目录为 `artifacts/Publish/<版本>/ControllerForwardingTool`，输出 EXE 为 `ControllerForwardingTool.exe`。当前检出未包含历史 `NS2ProWin11.Checks` 检查工程，不将旧检查记录当成本次运行结果。
+Nintendo、Xbox、PS5 研究文档引用厂商应用接口及社区逆向资料，不构成完整官方协议或固件兼容性保证。历史实测仅适用于当时的设备、环境和版本；合成输入、Windows 虚拟设备回读与实体无线/游戏验收应分别理解。
 
-仓库根目录仍为 `D:\github\NS2ProWin11`；`%LOCALAPPDATA%\NS2ProWin11` 设置目录与虚拟设备旧序列号前缀保留，以继续使用既有校准并兼容回环过滤。r4—r6 的发布记录保留当时文件名与哈希。
-
-新版的开机启动项显示为 `Controller Forwarding Tool`。已开启开机启动的用户在新版点击「应用并保存」时会更新 EXE 路径并移除旧的 `NS2ProWin11` 启动项；关闭开机启动会同时清理新旧两项。修改源码和构建不直接更改本机启动注册表。
-
-r8 验证：新解决方案在独立目录和常规 `bin/obj` 路径均构建通过，0 警告 / 0 错误；已验证 XAML 页面、托盘/窗口图标、五张模式图片及程序集名称，并实际使用新发布配置生成 `D:\Temp\Publish\ControllerForwardingTool\ControllerForwardingTool.exe`。发布目录不包含旧名称 EXE、docs 或 PDB。
-
-## 来源与引用规则
-
-- 官方：[Nintendo Switch 2 Pro Controller 产品规格](https://www.nintendo.com/sg/hardware/switch2/accessories/controller.html)、[Nintendo Pro Controller 有线通信帮助](https://en-americas-support.nintendo.com/app/answers/detail/a_id/26315/~/how-to-enable%2Fdisable-pro-controller-wired-communication)、[微软 BLE GATT 客户端 API](https://learn.microsoft.com/en-us/windows/uwp/devices-sensors/gatt-client)、[微软 UMDF HID 驱动文档](https://learn.microsoft.com/en-us/windows-hardware/drivers/wdf/creating-umdf-hid-minidrivers)。
-- 参考工程：`D:\github\XinHeLianSheng-Pro2-Bridge\source\final-three-in-one`，主要关注 `windows/v60_viiper_app` 的 BLE 输入端与 `experiments/esp-switch1-r4` 的 NS1 USB 实验端。其源码和发布二进制版本存在差异，见参考工程 `README.md`。
-- 社区逆向：[dekuNukem 的 Bluetooth HID 报告记录](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering/blob/master/bluetooth_hid_notes.md)与[子命令记录](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering/blob/master/bluetooth_hid_subcommands_notes.md)。这不是 Nintendo 官方资料。
+第三方许可和分发要求以仓库 [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) 及随附许可证为准。后续维护保留历史结论的日期，同时在当前文档更新实现状态。

@@ -67,7 +67,12 @@
             <TextBlock Grid.Row="2" Text="主要框架" Classes="detailLabel" />
             <TextBlock Grid.Row="2" Grid.Column="1" Text="{x:Static app:AppIdentity.FrameworkLabel}" Classes="detailValue" />
             <TextBlock Grid.Row="3" Text="源代码" Classes="detailLabel" />
-            <TextBlock Grid.Row="3" Grid.Column="1" Text="{x:Static app:AppIdentity.SourceCodeUrl}" Classes="detailValue" />
+            <Button Grid.Row="3" Grid.Column="1" Click="OpenProject" Tag="{x:Static app:AppIdentity.SourceCodeUri}"
+                    Padding="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Left"
+                    ToolTip.Tip="{x:Static app:AppIdentity.SourceCodeUrl}" AutomationProperties.Name="打开手柄转发工具源代码仓库">
+              <TextBlock Text="{x:Static app:AppIdentity.SourceCodeUrl}" FontSize="16"
+                         Foreground="{StaticResource AccentStrong}" TextWrapping="Wrap" />
+            </Button>
             <TextBlock Grid.Row="4" Text="开源协议" Classes="detailLabel" />
             <TextBlock Grid.Row="4" Grid.Column="1" Text="MIT License" Classes="detailValue" />
           </Grid>
