@@ -8,6 +8,17 @@
     </Grid>
     <TextBlock Text="{Binding TesterRateHint}" Classes="caption" />
     <views:TesterDevicePicker />
+    <Border Classes="card" Padding="20">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section" Text="键鼠 → 虚拟手柄 · 接收测试" />
+        <TextBlock Text="{Binding TesterKeyboardMouseStatus}" TextWrapping="Wrap" FontWeight="SemiBold" />
+        <TextBlock Classes="caption" Text="映射页可本地预览；本页读取 Windows 实际收到的手柄输入。测试时鼠标会锁定，按 Esc / F8 退出，切换窗口自动暂停。" TextWrapping="Wrap" />
+        <WrapPanel>
+          <Button Classes="primary" Content="开始键鼠测试" Click="StartKeyboardMouseTest" IsEnabled="{Binding CanStartKeyboardMouseTest}" Margin="0,0,10,0" />
+          <Button Content="打开虚拟手柄配置" Command="{Binding NavigateCommand}" CommandParameter="虚拟手柄" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
     <Grid ColumnDefinitions="5*,6*" ColumnSpacing="16">
       <StackPanel Spacing="16">
         <Border Classes="card" Padding="20">
@@ -18,8 +29,9 @@
             <TextBlock Classes="caption" Text="通过上方手柄图标切换，显示布局跟随所选型号。" />
           </StackPanel>
         </Border>
-        <Border Classes="card" Padding="12,16">
+        <Border x:Name="TesterInputView" Classes="card" Padding="12,16">
           <StackPanel Spacing="4">
+            <TextBlock Classes="caption" Text="{Binding TesterKeyboardMouseStatus}" TextWrapping="Wrap" />
             <views:ControllerTesterControl Height="340" Buttons="{Binding DisplayButtons}" IsOnline="{Binding TesterIsOnline}" Layout="{Binding DisplayLayout}"
                 BatteryPercent="{Binding TesterBatteryPercent}" LeftX="{Binding TesterLeftX}" LeftY="{Binding TesterLeftY}" RightX="{Binding TesterRightX}" RightY="{Binding TesterRightY}"
                 LeftTrigger="{Binding TesterLeftTrigger}" RightTrigger="{Binding TesterRightTrigger}" />

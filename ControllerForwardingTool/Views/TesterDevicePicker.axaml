@@ -20,7 +20,7 @@
   <Border Classes="card" Padding="18">
     <StackPanel Spacing="10">
       <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="section" Text="手柄源" /><Button Grid.Column="1" Content="刷新设备" Command="{Binding RefreshGamepadsCommand}" /></Grid>
-      <TextBlock Classes="caption" Text="当前计算机已连接的手柄，包括 NS、Xbox、PS 和模拟设备。点击图标查看实际输入。" TextWrapping="Wrap" />
+      <TextBlock Classes="caption" Text="当前计算机已连接的手柄，包括 NS、Xbox、PS 和模拟设备。点击图标查看实际输入，并发送一次 25% 强度、250 ms 的识别振动。" TextWrapping="Wrap" />
       <Border IsVisible="{Binding HasNoTesterDevices}" Padding="20" Background="#F4F7FC" CornerRadius="8">
         <StackPanel Spacing="6">
           <TextBlock Text="未发现已连接的手柄" FontWeight="SemiBold" />
@@ -31,6 +31,7 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="210" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
       </ItemsControl>
       <TextBlock Classes="caption" Text="本应用生成的设备标注为“模拟手柄”；其他系统设备的实体 / 模拟来源未确认。" TextWrapping="Wrap" IsVisible="{Binding HasTesterDevices}" />
+      <TextBlock Classes="caption" Text="{Binding TesterSelectionRumbleResult}" TextWrapping="Wrap" IsVisible="{Binding HasTesterSelectionRumbleResult}" />
     </StackPanel>
   </Border>
   <Border Classes="card" Padding="18">

@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.ComponentModel;
 using ControllerForwardingTool.ViewModels;
 using ControllerForwardingTool.Core;
@@ -14,6 +16,20 @@ public partial class MainWindow : Window
     internal MainWindow(WindowPlacementStore placementStore)
     {
         InitializeComponent();
+        // Captured test input belongs to the virtual controller. Space/Enter, mouse buttons,
+        // and Tab must not activate or move focus through the application's controls.
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (DataContext is not MainViewModel { IsKeyboardMouseCaptured: true } vm) return;
+            if (e.Key == Key.Escape) vm.StopKeyboardMouseCapture();
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, (_, e) => SuppressCapturedInput(e), RoutingStrategies.Tunnel);
+        AddHandler(TextInputEvent, (_, e) => SuppressCapturedInput(e), RoutingStrategies.Tunnel);
+        AddHandler(PointerPressedEvent, (_, e) => SuppressCapturedInput(e), RoutingStrategies.Tunnel);
+        AddHandler(PointerReleasedEvent, (_, e) => SuppressCapturedInput(e), RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, (_, e) => SuppressCapturedInput(e), RoutingStrategies.Tunnel);
+        Deactivated += (_, _) => (DataContext as MainViewModel)?.StopKeyboardMouseCapture();
         windowPlacement = placementStore;
         lastVisibleWindowState = windowPlacement.Restore(this);
         PropertyChanged += (_, args) =>
@@ -44,6 +60,10 @@ public partial class MainWindow : Window
         };
     }
     private bool exiting;
+    private void SuppressCapturedInput(RoutedEventArgs args)
+    {
+        if (DataContext is MainViewModel { IsKeyboardMouseCaptured: true }) args.Handled = true;
+    }
     private bool changingVisibility;
     private readonly WindowPlacementStore windowPlacement;
     private WindowState lastVisibleWindowState;

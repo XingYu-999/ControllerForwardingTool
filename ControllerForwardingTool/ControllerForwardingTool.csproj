@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>ControllerForwardingTool</RootNamespace>
     <AssemblyName>ControllerForwardingTool</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Title>手柄转发工具</Title>
     <AssemblyTitle>手柄转发工具</AssemblyTitle>
     <Product>Controller Forwarding Tool</Product>

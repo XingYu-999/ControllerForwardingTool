@@ -1,5 +1,7 @@
 # NS2 Pro USB 注册与连接
 
+适用版本：**1.0.1**；同步日期：2026-09-27。[更新日志](../CHANGELOG.md) · [当前文档目录](README.md)。
+
 NS2 Pro 连接页同时提供 USB 设备选择和蓝牙扫描。实体 USB 输入继续由 SDL 处理，NS2 输入线路优先使用选中的 USB 手柄；拔线时先归零，再接续 BLE 输入。USB 注册不会由蓝牙 SYNC 注册开关触发。
 
 ## 使用
@@ -11,6 +13,14 @@ NS2 Pro 连接页同时提供 USB 设备选择和蓝牙扫描。实体 USB 输�
 5. “删除本机注册”从手柄清除本机配对，再读取确认。删除后可再次点击注册。若存储区同时包含其他主机，按钮禁用，因为公开协议没有可靠的单条删除操作。
 
 “忘记设备”仍只清除本地历史、名称与 Windows 配对。它不等于清除手柄内部注册。历史列表显示“曾确认主机注册”，当前 USB 状态以实际读取为准；读取失败显示未知。
+
+## Steam 能识别，但本软件 USB 列表为空
+
+NS2 USB 初始化和注册使用的 WinUSB 接口存在独占限制。Steam 已打开实体 NS2 时，本软件可能只能枚举到 USB 设备，无法打开输入接口。连接页会显示“已检测到 NS2 Pro USB，但无法打开输入接口”，不再将这种情况显示为未插线。
+
+从 Steam 菜单彻底退出 Steam（仅关闭窗口仍可能驻留），保持数据线连接。软件在没有已打开的 NS2 时每隔约 3 秒重试；也可点击“重新检测 USB”。恢复后再启动 Steam，并让游戏使用本软件创建的虚拟手柄。若仍无法打开，检查其他手柄工具的占用、数据线和 USB 驱动。USB 注册操作仍需实体接口可用。
+
+重试仅重新初始化 SDL 的 Switch 2 输入驱动，不写入主机注册，不重置已打开的 NS2，也不在软件主动释放 USB 管理接口期间抢回接口。若原生输入运行库加载失败，连接页会直接显示该错误。
 
 ## 实现边界
 
@@ -27,6 +37,8 @@ NS2 Pro 连接页同时提供 USB 设备选择和蓝牙扫描。实体 USB 输�
 
 协议检查覆盖只读查询、四阶段 USB 注册、重复注册不写入、错误挑战、提交与删除的存储读回、保留其他主机、取消、错误地址/传输、公开 AES 向量，以及 USB 优先、断线归零和 BLE 接续。设置检查覆盖地址映射往返和旧配置空字段。
 
-实际窗口已检查无设备状态。尚未完成实体手柄 USB 注册、拔线回连、删除再注册验收；模拟回复不能替代固件和驱动兼容性验证。
+此前实机诊断已复现 Steam 占用下 `libusb_open` 返回 `-3`（访问被拒绝），退出 Steam 后同一 SDL 运行库能打开实体 `057E:2069`。两个隔离进程的实体 USB 验证中，占用时显示设备已检测到但接口无法打开，释放后无需拔线约 3.5 秒恢复，连续读取 50 次快照保持同一设备实例，输入约 248 Hz，陀螺仪可用；验证未发送注册命令。协议检查共 419 项通过，含 USB 恢复节流、禁用期间不抢占、虚拟设备及蓝牙排除。
+
+上述实机观察保留原迭代背景，1.0.1 文档同步仅重跑模拟协议与配置检查，见[构建与验证](04_BUILD_AND_VALIDATION.md)。尚未完成实体手柄 USB 注册、拔线回连、删除再注册验收；模拟回复不能替代固件和驱动兼容性验证。
 
 依据：[配对流程](https://github.com/ndeadly/switch2_controller_research/blob/master/bluetooth_interface.md#pairing)、[命令](https://github.com/ndeadly/switch2_controller_research/blob/master/commands.md)、[存储布局](https://github.com/ndeadly/switch2_controller_research/blob/master/memory_layout.md)、[SDL USB 实现](https://github.com/libsdl-org/SDL/blob/release-3.4.16/src/joystick/hidapi/SDL_hidapi_switch2.c)。

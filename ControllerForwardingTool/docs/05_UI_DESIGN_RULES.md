@@ -1,5 +1,7 @@
 # 手柄转发工具 / Controller Forwarding Tool UI 设计规范
 
+> 历史记录（1.0.1 文档同步，2026-09-27）：正文保留当时的设计、功能状态与验证结果，不作为当前操作说明。当前键鼠 / 混合输入、全输入映射、NS2 USB 连接及默认配置见[当前文档目录](../../docs/README.md)和[1.0.1 更新日志](../../CHANGELOG.md)。
+
 > 项目：`D:\github\NS2ProWin11\ControllerForwardingTool`，.NET 10 / Avalonia 12，目标系统为 Windows 11。  
 > 参考：`D:\github\UI-Design-Rules.md`（Virtual Driver Control UI 设计规则 v1.1）。沿用其桌面工具视觉语言、信息层级和状态反馈方式；设备、页面与文案按 NS2 Pro 蓝牙输入和 NS1 Pro 虚拟输出重新设计。  
 > 版本：1.1，2026-09-26。本文保留设计目标。当前已实现概览、蓝牙、手柄测试、映射说明、虚拟手柄、日志、设置和关于页面；Steam 检测和映射编辑尚未实现；配置保存已在 r3 实现。实现状态见 [06](06_PROTOTYPE_STATUS.md)。

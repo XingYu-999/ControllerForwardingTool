@@ -3,7 +3,10 @@ using System.Collections.Concurrent;
 namespace ControllerForwardingTool.Input;
 
 public sealed record GamepadFrame(IReadOnlyList<GamepadDevice> Devices, IReadOnlyDictionary<uint, GamepadSnapshot> Inputs,
-    string Status, double At);
+    string Status, double At)
+{
+    public string? Ns2UsbStatus { get; init; }
+}
 
 /// <summary>One SDL owning thread and immutable snapshots. No native calls or thread joins on the UI thread.</summary>
 public sealed class GamepadMonitor : IAsyncDisposable
@@ -17,6 +20,7 @@ public sealed class GamepadMonitor : IAsyncDisposable
     private GamepadFrame latest = new([], new Dictionary<uint, GamepadSnapshot>(), "正在启动手柄输入服务…", 0);
     private bool ns2Enabled;
     private int refreshRequested;
+    private int ns2RetryRequested;
     private GyroOptions motionOptions = new();
     private sealed record Feedback(GamepadDevice Device, RumbleSettings Settings);
     private Feedback? feedback;
@@ -33,6 +37,7 @@ public sealed class GamepadMonitor : IAsyncDisposable
     public string Status => Latest.Status;
     public void EnableNs2Usb(bool enabled) { Volatile.Write(ref ns2Enabled, enabled); wake.Set(); }
     public void RequestRefresh() { Interlocked.Exchange(ref refreshRequested, 1); wake.Set(); }
+    public void RetryNs2Usb() { Interlocked.Exchange(ref ns2RetryRequested, 1); RequestRefresh(); }
     public GyroCalibration Calibration(uint id)
     {
         var calibration = calibrations.GetOrAdd(id, _ => new());
@@ -92,6 +97,7 @@ public sealed class GamepadMonitor : IAsyncDisposable
                 bool requested = Volatile.Read(ref ns2Enabled);
                 if (requested != enabled) { service.EnableNs2Usb(requested); enabled = requested; nextRefresh = 0; }
                 while (usbCommands.TryDequeue(out var operation)) { operation(service); nextRefresh = 0; }
+                if (Interlocked.Exchange(ref ns2RetryRequested, 0) != 0) { service.RequestNs2UsbRetry(); nextRefresh = 0; }
                 if (GyroCalibration.Now >= nextRefresh || Interlocked.Exchange(ref refreshRequested, 0) != 0)
                 {
                     devices = service.Refresh(); nextRefresh = GyroCalibration.Now + 1;
@@ -115,12 +121,16 @@ public sealed class GamepadMonitor : IAsyncDisposable
                     appliedFeedback = desiredFeedback;
                     nextRumble = GyroCalibration.Now + .08;
                 }
-                Volatile.Write(ref latest, new(devices, inputs, service.Status, GyroCalibration.Now));
+                Volatile.Write(ref latest, new(devices, inputs, service.Status, GyroCalibration.Now) { Ns2UsbStatus = service.Ns2UsbStatus });
                 FrameUpdated?.Invoke(Latest);
                 wake.WaitOne(8);
             }
         }
-        catch (Exception ex) { Volatile.Write(ref latest, new([], new Dictionary<uint, GamepadSnapshot>(), $"手柄输入服务停止：{ex.Message}", GyroCalibration.Now)); }
+        catch (Exception ex)
+        {
+            string error = $"手柄输入服务停止：{ex.Message}";
+            Volatile.Write(ref latest, new([], new Dictionary<uint, GamepadSnapshot>(), error, GyroCalibration.Now) { Ns2UsbStatus = error });
+        }
         finally
         {
             while (commands.TryDequeue(out var cmd)) cmd.Result.TrySetResult("输入服务已关闭");

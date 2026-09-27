@@ -1,6 +1,6 @@
 # 构建、发布与验证
 
-核对日期：2026-09-27。以下命令从仓库根目录运行。主解决方案是 `ControllerForwardingTool.slnx`，仅包含桌面应用；`tools/` 中的检查项目需单独执行。
+适用版本：**1.0.1**；核对日期：2026-09-27。以下命令从仓库根目录运行。主解决方案是 `ControllerForwardingTool.slnx`，仅包含桌面应用；`tools/` 中的检查项目需单独执行。
 
 ## 1. 构建环境
 
@@ -20,8 +20,8 @@ dotnet build ControllerForwardingTool.slnx -c Release --no-restore
 
 | 工程 | 覆盖范围 | 运行条件/副作用 |
 | --- | --- | --- |
-| [ControllerProtocolChecks](../tools/ControllerProtocolChecks/Program.cs) | NS1 报告与 IMU、SPI、震动转码、速率去重、NS1 本地 USB/IP 输入及反馈 | 合成状态与本机 TCP 回环，不挂载 Windows 驱动，不连接实体手柄 |
-| [SettingsPathChecks](../tools/SettingsPathChecks/Program.cs) | 数据目录、旧设置迁移、已有新配置优先、损坏数据、迁移失败 | 使用隔离临时路径，不读写真实用户配置 |
+| [ControllerProtocolChecks](../tools/ControllerProtocolChecks/Program.cs) | NS1 报告 / IMU / SPI、反馈和报告率、USB 注册 / 恢复、键鼠捕获、多源映射、摇杆编辑、草稿预览、NS1 本机 TCP 回环 | 模拟状态与本机 TCP 回环，不挂载 Windows 驱动，不连接实体手柄 |
+| [SettingsPathChecks](../tools/SettingsPathChecks/Program.cs) | 数据目录、迁移与失败回退、1.0.1 默认预设、USB 地址、键鼠 / 摇杆 / 补充配置往返和线路隔离 | 使用隔离临时路径，不读写真实用户配置 |
 | [SingleInstanceChecks](../tools/SingleInstanceChecks/Program.cs) | 目录身份、跨进程唤醒、并发启动、ACK/超时和重启 | 启动检查子进程，使用独立命名管道标识，不运行主应用 |
 | [WindowPlacementChecks](../tools/WindowPlacementChecks/Program.cs) | 窗口恢复、隐藏/重开、最小化退出与屏幕边界 | 需要 Windows 桌面，会短暂显示测试窗口；使用临时配置，不创建主 ViewModel 或扫描 BLE |
 
@@ -33,11 +33,16 @@ dotnet run --project tools/SingleInstanceChecks -c Release
 dotnet run --project tools/WindowPlacementChecks -c Release
 # 可选：协议检查后渲染手柄控件图片
 dotnet run --project tools/ControllerProtocolChecks -c Release -- --render artifacts/controller-diagrams
+# 可选：键鼠图、快速配置弹窗、混合映射页及映射 UI 检查
+dotnet run --project tools/ControllerProtocolChecks -c Release -- --render-keyboard artifacts/keyboard-diagrams
+dotnet run --project tools/ControllerProtocolChecks -c Release -- --render-quick-mapping artifacts/quick-mapping
+dotnet run --project tools/ControllerProtocolChecks -c Release -- --render-hybrid-mapping artifacts/hybrid-mapping
+dotnet run --project tools/ControllerProtocolChecks -c Release -- --check-mapping-ui artifacts/mapping-ui
 ```
 
 这几个程序通过异常/退出码报告失败，不是解决方案内由 `dotnet test` 自动发现的测试套件。部分项目的程序集名为 `ControllerForwardingTool.Checks`，应传入实际工程路径，不能运行不存在的根目录 `ControllerForwardingTool.Checks` 工程。
 
-历史文档提到的 112/115/161 等检查数量、`--render-routes` 等参数及旧 `NS2ProWin11.Checks` 属于当时记录；当前 `ControllerProtocolChecks` 的可选参数只有 `--render <目录>`。现存检查没有覆盖所有 BLE 注册、线路草稿和持续震动场景，不能把历史通过记录当作可重现的完整回归集。
+历史文档提到的 34/112/115/161 等检查数量、`--render-routes` 参数及旧 `NS2ProWin11.Checks` 属于阶段记录；当前入口支持上面的五种可选参数，每次指定一种并传入输出目录。映射 UI 检查和渲染需要 Windows 图形环境。现存自动检查已覆盖键鼠、混合输入、草稿与编辑会话，但尚未覆盖所有 BLE、游戏反馈和固件差异，不能把历史通过记录当作当前完整回归集。
 
 ## 3. 发布与打包
 
@@ -54,7 +59,7 @@ dotnet publish ControllerForwardingTool/ControllerForwardingTool.csproj -c Relea
 
 ```powershell
 # 同时生成运行 ZIP 与第三方源码 ZIP；标签不能复用
-./tools/package-release.ps1 -Version 1.0.0-local -SelfContained
+./tools/package-release.ps1 -Version 1.0.1-local -SelfContained
 ```
 
 [package-release.ps1](../tools/package-release.ps1) 的产物：
@@ -66,7 +71,7 @@ dotnet publish ControllerForwardingTool/ControllerForwardingTool.csproj -c Relea
 | `artifacts/ControllerForwardingTool-win-x64-<标签>.zip` | 运行包 |
 | `artifacts/ControllerForwardingTool-third-party-sources-<标签>.zip` | 第三方源码、构建脚本和许可证包，不是本项目完整源码快照 |
 
-任一目标已存在时脚本拒绝覆盖，使用新标签重试。`-Version` 只是文件/目录标签，不改变 csproj 中的 `1.0.0`。省略 `-SelfContained` 生成框架依赖包。脚本最后输出两个 ZIP 的 SHA-256。
+任一目标已存在时脚本拒绝覆盖，使用新标签重试。`-Version` 只是文件/目录标签，不改变 csproj 中的 `1.0.1`。关于页读取程序集三段版本 `1.0.1`，安装器默认读取 EXE 四段文件版本 `1.0.1.0`。省略 `-SelfContained` 生成框架依赖包。脚本最后输出两个 ZIP 的 SHA-256。
 
 发布保留 `LICENSE`、`THIRD_PARTY_NOTICES.md`、本机 DLL、`licenses`、VIIPER 和 USB/IP 安装器。运行目录不包含开发 docs、README、PDB 和第三方源码压缩包；源码通过配套 ZIP 提供。直接 `dotnet publish` 不会清理旧文件，使用空目录，避免遗留历史 EXE 或文档。
 
@@ -82,15 +87,16 @@ dotnet publish ControllerForwardingTool/ControllerForwardingTool.csproj -c Relea
 4. 游戏发出持续震动、强度更新和停止，停止会话/断开后马达清零；HD 流与普通马达分别检查。
 5. 线路切换、单独保存映射、未保存草稿、保存失败和重启后的配置恢复。
 6. 同目录重复启动、托盘恢复、关闭/退出、音频保护，以及安装版的当前用户/所有用户自启入口。
+7. NS2 USB 状态读取、手动注册、拔线回连和删除再注册；接口占用提示与释放后重试。
+8. 键鼠 F8 / Esc、失焦释放、测试页实际回读、多源按钮释放与扳机行程、混合输入体感来源及实体断线整体归零。
 
-本次文档与关于页调整不包含重新安装驱动、写入手柄注册或真实游戏兼容性验收。验证结果应注明实际执行的命令和限制，保留历史观察的原始上下文。
+本次 1.0.1 版本与文档同步不包含重新安装驱动、写入手柄注册或真实游戏兼容性验收。验证结果应注明实际执行的命令和限制，保留历史观察的原始上下文。
 
-## 5. 本次核对结果（2026-09-27）
+## 5. 1.0.1 本次核对结果（2026-09-27）
 
-- `dotnet build ControllerForwardingTool.slnx -c Release --no-restore`：通过，0 警告、0 错误，包含关于页源码链接的 XAML 编译。
-- `ControllerProtocolChecks`：34 项协议、反馈与报告率检查通过。
-- `SettingsPathChecks`：配置路径与迁移检查全部通过。
-- `SingleInstanceChecks`：跨进程唤醒、并发启动、重启和超时回退检查全部通过。
-- 本次未运行 `WindowPlacementChecks`、实际浏览器点击、BLE/游戏实机验收或安装器编译。
+- `dotnet build ControllerForwardingTool.slnx -c Release --no-restore`：通过，0 警告、0 错误，包含 1.0.1 更新日志页 XAML 编译。
+- `dotnet run --project tools/ControllerProtocolChecks -c Release --no-restore`：419 项协议、反馈、USB 注册 / 恢复、键鼠、映射与报告率检查通过。
+- `dotnet run --project tools/SettingsPathChecks -c Release --no-restore`：默认预设、配置往返、路径与迁移检查全部通过。
+- 本次未运行 `SingleInstanceChecks`、`WindowPlacementChecks`、可选 UI 渲染、BLE/游戏实机验收或安装器编译；早前单实例检查通过记录属于上一轮验证。
 
 首次沙箱构建因 Avalonia 构建任务无法访问本机许可缓存目录而失败；允许构建进程访问后重跑通过，未修改依赖或项目编译设置。

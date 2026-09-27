@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
+        x:Class="ControllerForwardingTool.Views.QuickMappingDialog" x:DataType="vm:MainViewModel"
+        Title="快速配置" Width="620" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="{StaticResource Canvas}" FontFamily="Microsoft YaHei UI, Segoe UI">
+  <Border Padding="28" Background="{StaticResource Canvas}">
+    <StackPanel Spacing="14">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="快速配置" Classes="section" />
+        <TextBlock x:Name="ProgressText" Grid.Column="1" Text="{Binding QuickMappingProgress}" Classes="caption" VerticalAlignment="Center" />
+      </Grid>
+      <TextBlock x:Name="PromptText" Text="{Binding QuickMappingPrompt}" FontSize="23" FontWeight="Bold" TextWrapping="Wrap" />
+      <TextBlock x:Name="HintText" Text="{Binding QuickMappingHint}" Classes="caption" TextWrapping="Wrap" MinHeight="44" />
+      <Border Classes="card" Padding="12">
+        <views:ControllerTesterControl x:Name="TargetDiagram" Height="235" Layout="{Binding MappingOutput.Layout}"
+            SelectedButton="{Binding HighlightedMappingTarget}" IsOnline="False" />
+      </Border>
+      <TextBlock Text="逐项录入后自动进入下一项。跳过保留原配置；完成后可直接测试，应用并保存以保留配置。" Classes="caption" TextWrapping="Wrap" />
+      <Button Content="此项使用鼠标左键" Command="{Binding QuickBindMouseLeftCommand}" IsVisible="{Binding CanQuickBindMouseLeft}" HorizontalAlignment="Stretch" />
+      <Border Height="1" Background="{StaticResource Border}" />
+      <Grid x:Name="DialogActions" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <TextBlock Text="Esc 取消本次配置" Classes="caption" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="跳过此项" Command="{Binding SkipQuickMappingCommand}" />
+        <Button Grid.Column="2" Content="取消" Command="{Binding CancelMappingCaptureCommand}" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</Window>

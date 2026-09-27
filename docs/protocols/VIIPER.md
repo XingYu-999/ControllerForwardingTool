@@ -2,7 +2,7 @@
 
 [协议目录](README.md) · [NS2](NS2_PRO.md) · [Xbox](XBOX.md) · [PS5 / Edge](PS5.md)
 
-核对日期：2026-09-27。本文格式是 C# 应用与随附 **VIIPER haptic 分支**之间的 TCP 消息，不是厂商 USB/蓝牙原始输入报告，也不能推断为所有 VIIPER 版本都兼容。NS1 完全不走此通道。
+适用版本：**1.0.1**；核对日期：2026-09-27。本文格式是 C# 应用与随附 **VIIPER haptic 分支**之间的 TCP 消息，不是厂商 USB/蓝牙原始输入报告，也不能推断为所有 VIIPER 版本都兼容。NS1 完全不走此通道。
 
 源码：[ViiperProtocolClient](../../ControllerForwardingTool/VirtualDevice/ViiperProtocolClient.cs)、[VirtualControllerSession](../../ControllerForwardingTool/VirtualDevice/VirtualControllerSession.cs)、[VirtualProfiles](../../ControllerForwardingTool/VirtualDevice/VirtualProfiles.cs)、[Ns2VirtualReport](../../ControllerForwardingTool/VirtualDevice/Ns2VirtualReport.cs)。随附后端源码归档为 [viiper-haptic-source.tar.gz](../../drivers/viiper/viiper-haptic-source.tar.gz)；本文核对应用侧收发契约，不声称重新审计/重建整个后端。
 

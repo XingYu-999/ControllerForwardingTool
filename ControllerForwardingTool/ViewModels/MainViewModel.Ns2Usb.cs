@@ -21,6 +21,7 @@ public partial class MainViewModel
     [ObservableProperty] public partial string Ns2UsbInputText { get; set; } = "等待 USB 输入";
     private UsbRegistrationResult? usbRegistration;
     private string? ns2UsbSerial, inspectedUsbSerial;
+    private string? lastNs2UsbDiagnostic;
     private GamepadDevice? ns2UsbFeedbackDevice;
     private ulong usbHandoverAddress;
     private bool usbWasConnected;
@@ -76,7 +77,14 @@ public partial class MainViewModel
             if (IsConnecting) connectionCancellation?.Cancel();
             if (IsConnected) _ = HandleLostConnectionAsync();
         }
-        Ns2UsbStatus = snapshot is not null ? "NS2 Pro · USB 已连接" : available.Length > 1 ? "请选择要连接的 USB 手柄" : "USB 未连接 · 请插入数据线";
+        string? diagnostic = gamepads.Latest.Ns2UsbStatus;
+        Ns2UsbStatus = snapshot is not null ? "NS2 Pro · USB 已连接" : available.Length > 0 ? "请选择要连接的 USB 手柄"
+            : diagnostic ?? "USB 未连接 · 请插入数据线";
+        if (diagnostic != lastNs2UsbDiagnostic)
+        {
+            if (diagnostic is not null) AddLog("USB", diagnostic);
+            lastNs2UsbDiagnostic = diagnostic;
+        }
         Ns2UsbInputText = snapshot is null ? "等待 USB 输入" : $"按键：{snapshot.Buttons} · 电量 {(snapshot.Battery >= 0 ? snapshot.Battery + "%" : "未知")} · 输入 {snapshot.InputRateHz?.ToString("F1") ?? "—"} Hz";
         if (usbWasConnected && !IsNs2UsbConnected)
         {
@@ -94,6 +102,12 @@ public partial class MainViewModel
     }
 
     [RelayCommand] private Task InspectNs2UsbAsync() => RunUsbRegistrationAsync(UsbRegistrationAction.Inspect);
+    [RelayCommand] private void RetryNs2Usb()
+    {
+        if (IsNs2UsbBusy) return;
+        UpdateNs2UsbAccess();
+        gamepads.RetryNs2Usb();
+    }
     [RelayCommand] private Task RegisterNs2UsbAsync() => RunUsbRegistrationAsync(UsbRegistrationAction.Register);
     [RelayCommand] private Task DeleteNs2UsbRegistrationAsync() => RunUsbRegistrationAsync(UsbRegistrationAction.Delete);
     [RelayCommand] private void TestNs2Usb()

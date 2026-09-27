@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ControllerForwardingTool.ViewModels" xmlns:views="using:ControllerForwardingTool.Views"
+        x:Class="ControllerForwardingTool.Views.MappingButtonDialog" x:DataType="vm:MainViewModel"
+        Title="配置按键" Width="700" SizeToContent="Height" CanResize="False" MaxHeight="850"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="{StaticResource Canvas}" FontFamily="Microsoft YaHei UI, Segoe UI">
+  <Border Padding="24" Background="{StaticResource Canvas}">
+    <StackPanel Spacing="14">
+      <TextBlock x:Name="EditorTitle" Text="{Binding MappingEditorTitle}" FontSize="23" FontWeight="Bold" TextWrapping="Wrap" />
+      <TextBlock Text="录入来源后点击确认；确认前不会修改映射。Esc 取消。" Classes="caption" TextWrapping="Wrap" />
+      <views:ControllerTesterControl x:Name="EditorDiagram" Height="170" Layout="{Binding MappingOutput.Layout}" SelectedButton="{Binding HighlightedMappingTarget}" IsOnline="False" />
+      <TabControl x:Name="EditorTabs" SelectedIndex="{Binding MappingEditorTab, Mode=TwoWay}" Padding="0" Background="Transparent">
+        <TabItem x:Name="EditorButtonTab" Header="{Binding MappingButtonTabTitle}">
+          <StackPanel Spacing="12" Margin="0,12,0,0">
+            <StackPanel Spacing="6" IsVisible="{Binding MappingEditorTargetEditable}">
+              <TextBlock Text="映射到" FontWeight="SemiBold" />
+              <ComboBox x:Name="ButtonEditorTarget" ItemsSource="{Binding MappingEditorTargets}" SelectedItem="{Binding MappingEditorTarget}" HorizontalAlignment="Stretch" AutomationProperties.Name="修改此规则的输出目标" />
+            </StackPanel>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <Border Classes="card" Padding="14" IsVisible="{Binding CanEditPhysicalSource}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="手柄来源" Classes="section" />
+                  <TextBlock Text="按下真实手柄按钮添加" Classes="caption" />
+                  <ScrollViewer MaxHeight="140">
+                    <ItemsControl x:Name="ButtonControllerSources" ItemsSource="{Binding EditorControllerSources}">
+                      <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:MappingEditorSource">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                          <Button Grid.Column="1" Content="移除" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveMappingEditorSourceCommand}" CommandParameter="{Binding}" />
+                        </Grid>
+                      </DataTemplate></ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="{Binding EditorKeyboardColumn}" Grid.ColumnSpan="{Binding EditorKeyboardSpan}" Classes="card" Padding="14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="键盘 / 鼠标来源" Classes="section" />
+                  <TextBlock Text="按键添加，可依次录入多个来源" Classes="caption" />
+                  <ScrollViewer MaxHeight="140">
+                    <ItemsControl x:Name="ButtonKeyboardSources" ItemsSource="{Binding EditorKeyboardSources}">
+                      <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:MappingEditorSource">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                          <Button Grid.Column="1" Content="移除" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveMappingEditorSourceCommand}" CommandParameter="{Binding}" />
+                        </Grid>
+                      </DataTemplate></ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </StackPanel>
+              </Border>
+            </Grid>
+            <Border Classes="inset" Padding="12">
+              <StackPanel Spacing="4">
+                <CheckBox Content="绑定鼠标左键" IsChecked="{Binding MappingEditorMouseLeft}" />
+                <TextBlock Text="左键单独勾选，点击确认、移除或下拉框不会被录成源按键。" Classes="caption" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <TextBlock x:Name="ButtonEditorHint" Text="{Binding MappingEditorHint}" Classes="caption" TextWrapping="Wrap" MinHeight="36" />
+          </StackPanel>
+        </TabItem>
+        <TabItem x:Name="EditorStickTab" Header="摇杆" IsVisible="{Binding HasStickMappingEditor}">
+          <StackPanel Spacing="12" Margin="0,12,0,0">
+            <StackPanel x:Name="PhysicalStickEditor" Spacing="10" IsVisible="{Binding !IsKeyboardMouseInput}">
+              <TextBlock Text="源摇杆" Classes="section" />
+              <ComboBox x:Name="StickEditorSource" ItemsSource="{Binding MappingStickSources}" SelectedIndex="{Binding MappingStickSourceIndex, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.Name="选择映射摇杆轴的源摇杆" />
+              <TextBlock Text="推动一个实体摇杆也可选择。上下左右随源摇杆整体映射，无需逐项配置；键鼠和摇杆按下不能替代摇杆轴。" Classes="caption" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel x:Name="KeyboardStickEditor" Spacing="10" IsVisible="{Binding IsKeyboardMouseInput}">
+              <TextBlock Text="上下左右" Classes="section" />
+              <TextBlock Text="点击方向对应的源键，再按下要使用的键盘或鼠标按键。" Classes="caption" TextWrapping="Wrap" />
+              <ItemsControl x:Name="StickDirectionList" ItemsSource="{Binding MappingStickDirections}">
+                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:MappingStickDirectionRow">
+                  <Grid ColumnDefinitions="110,*,Auto" ColumnSpacing="10" Margin="0,4">
+                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="{Binding KeyLabel}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RecordStickDirectionCommand}" CommandParameter="{Binding Direction}" />
+                    <Button Grid.Column="2" Content="清除" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ClearStickDirectionCommand}" CommandParameter="{Binding Direction}" />
+                  </Grid>
+                </DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="此方向使用鼠标左键" Command="{Binding BindStickMouseLeftCommand}" IsEnabled="{Binding CanBindStickMouseLeft}" />
+            </StackPanel>
+            <TextBlock x:Name="StickEditorHint" Text="{Binding MappingStickEditorHint}" Classes="caption" TextWrapping="Wrap" MinHeight="36" />
+          </StackPanel>
+        </TabItem>
+      </TabControl>
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <TextBlock Text="确认后即可测试，保存以保留配置" Classes="caption" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="取消" Command="{Binding CancelMappingCaptureCommand}" />
+        <Button Grid.Column="2" Classes="primary" Content="确认" Command="{Binding ConfirmMappingEditorCommand}" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</Window>

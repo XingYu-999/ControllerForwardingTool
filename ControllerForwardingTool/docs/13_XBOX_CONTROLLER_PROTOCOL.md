@@ -1,6 +1,6 @@
 # Xbox 通信协议入口
 
-协议资料已集中到仓库根目录的 docs/protocols：
+1.0.1 协议资料已集中到仓库根目录的 docs/protocols；版本变化见[更新日志](../../CHANGELOG.md)：
 
 - [当前实现与字段说明](../../docs/protocols/XBOX.md)
 - [原始研究资料](../../docs/protocols/reference/13_XBOX_CONTROLLER_PROTOCOL.md)

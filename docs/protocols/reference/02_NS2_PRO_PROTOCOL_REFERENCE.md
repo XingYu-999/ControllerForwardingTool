@@ -1,6 +1,6 @@
 # NS2 Pro 通信协议参考：官方资料核查与非官方观察
 
-> 历史研究归档：本文保留 2026-09-25 的参考工程观察，不描述当前应用的完整实现。当前初始化为 14 条，注册、电量与震动细节见 [NS2 当前协议](../NS2_PRO.md)。本机参考仓库路径仅用于追溯当时环境。
+> 历史研究归档（1.0.1 文档同步；原研究日期保留）：本文保留 2026-09-25 的参考工程观察，不描述当前应用的完整实现。当前初始化为 14 条，注册、电量与震动细节见 [NS2 当前协议](../NS2_PRO.md)。本机参考仓库路径仅用于追溯当时环境。
 
 > **不是 Nintendo 官方协议手册。** 截至 2026-09-25，公开 Nintendo 页面可确认 Switch 2 Pro Controller 具有 Bluetooth、NFC 等通信能力，但本次核查未发现面向公众的 GATT UUID、初始化命令和 FD2 字节布局规范。[Nintendo 产品规格](https://www.nintendo.com/sg/hardware/switch2/accessories/controller.html)。以下低层细节来自参考工程 `source/final-three-in-one/windows/v60_viiper_app/` 的实现观察；需要用真实手柄、固件版本和抓包验证。
 

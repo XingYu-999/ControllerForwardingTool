@@ -20,7 +20,7 @@ public sealed class ControllerTesterControl : Control
     private void Selection(DrawingContext c, Rect rect, ControllerButtons button)
     {
         hitRegions.Add((rect.Inflate(4), button));
-        if (SelectedButton != ControllerButtons.None && SelectedButton == button)
+        if (button != ControllerButtons.None && SelectedButton.HasFlag(button))
             c.DrawRectangle(null, new Pen(Brush.Parse("#2563EB"), 3), rect.Inflate(5), 8, 8);
     }
     protected override void OnPointerPressed(PointerPressedEventArgs e)

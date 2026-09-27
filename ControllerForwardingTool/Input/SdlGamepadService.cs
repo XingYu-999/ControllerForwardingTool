@@ -27,12 +27,16 @@ public sealed class SdlGamepadService : IDisposable
     private readonly Dictionary<uint, InputReportRate> inputRates = [];
     private readonly HashSet<uint> sensorReportDevices = [];
     private bool initialized;
+    private bool ns2UsbEnabled;
+    private readonly Ns2UsbRecovery ns2Recovery = new();
     private IntPtr libusb;
     public string Status { get; private set; } = "未初始化";
+    public string? Ns2UsbStatus { get; private set; }
     public event Action<uint, MotionSample>? MotionSampleReceived;
 
     public SdlGamepadService(bool enableNs2Usb = true)
     {
+        ns2UsbEnabled = enableNs2Usb;
         try
         {
             // SDL loads libusb by filename. Pin the bundled DLL explicitly, including when hosted by dotnet.exe.
@@ -50,12 +54,15 @@ public sealed class SdlGamepadService : IDisposable
     // WinUSB's NS2 initialization interface is exclusive. Release it when leaving the tester for a game.
     public void EnableNs2Usb(bool enabled)
     {
+        ns2UsbEnabled = enabled;
         if (initialized) Native.SDL_SetHint("SDL_JOYSTICK_HIDAPI_SWITCH2", enabled ? "1" : "0");
     }
 
+    public void RequestNs2UsbRetry() => ns2Recovery.RequestRetry();
+
     public IReadOnlyList<GamepadDevice> Refresh()
     {
-        if (!initialized) return [];
+        if (!initialized) { Ns2UsbStatus = Status; return []; }
         Update();
         IntPtr list = Native.SDL_GetJoysticks(out int count);
         List<GamepadDevice> result = [];
@@ -86,7 +93,43 @@ public sealed class SdlGamepadService : IDisposable
         }
         finally { Native.SDL_free(list); }
         foreach (uint id in handles.Keys.Except(result.Select(x => x.Id)).ToArray()) Close(id);
+        RefreshNs2UsbDiscovery(result);
         return result;
+    }
+
+    private void RefreshNs2UsbDiscovery(IReadOnlyList<GamepadDevice> devices)
+    {
+        // HID enumeration still sees an NS2 whose exclusive WinUSB interface is
+        // held by Steam, even though SDL_GetJoysticks omits that failed device.
+        bool opened = devices.Any(d => d.Vendor == 0x057E && d.Product == 0x2069);
+        bool detected = false;
+        if (!opened && ns2UsbEnabled)
+        {
+            var list = Native.SDL_hid_enumerate(0x057E, 0x2069);
+            try
+            {
+                for (var ptr = list; ptr != IntPtr.Zero;)
+                {
+                    var info = Marshal.PtrToStructure<Native.HidDeviceInfo>(ptr);
+                    if (Ns2UsbRecovery.IsUsbCandidate(info.Vendor, info.Product, info.Bus,
+                        Marshal.PtrToStringUni(info.Serial) ?? "")) detected = true;
+                    ptr = info.Next;
+                }
+            }
+            finally { Native.SDL_hid_free_enumeration(list); }
+        }
+        Ns2UsbStatus = !ns2UsbEnabled ? "USB 输入访问已暂停 · 打开 NS2 Pro 连接页后恢复"
+            : detected ? "已检测到 NS2 Pro USB，但无法打开输入接口。请彻底退出 Steam 或其他手柄软件（关闭窗口仍可能驻留）；软件会自动重试。若仍失败，请重新插线并检查 USB 驱动。"
+            : null;
+        if (ns2Recovery.ShouldRetry(GyroCalibration.Now, ns2UsbEnabled, detected, opened))
+        {
+            // Keep both updates on SDL's owning thread. Never reset a working
+            // physical or virtual NS2, nor retry while USB registration owns it.
+            Native.SDL_SetHint("SDL_JOYSTICK_HIDAPI_SWITCH2", "0");
+            Update();
+            Native.SDL_SetHint("SDL_JOYSTICK_HIDAPI_SWITCH2", "1");
+            Update();
+        }
     }
 
     public void Update()
@@ -208,6 +251,20 @@ public sealed class SdlGamepadService : IDisposable
     private static class Native
     {
         private const string Lib = "SDL3.dll";
+        [StructLayout(LayoutKind.Sequential)]
+        public struct HidDeviceInfo
+        {
+            public IntPtr Path;
+            public ushort Vendor, Product;
+            public IntPtr Serial;
+            public ushort Release;
+            public IntPtr Manufacturer, ProductName;
+            public ushort UsagePage, Usage;
+            public int Interface, InterfaceClass, InterfaceSubclass, InterfaceProtocol, Bus;
+            public IntPtr Next;
+        }
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr SDL_hid_enumerate(ushort vendor, ushort product);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_hid_free_enumeration(IntPtr devices);
         [StructLayout(LayoutKind.Explicit, Size = 128)]
         public struct SensorEvent
         {

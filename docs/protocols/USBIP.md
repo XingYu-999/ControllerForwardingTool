@@ -2,7 +2,7 @@
 
 [协议目录](README.md) · [NS1 HID](NS1_PRO.md) · [VIIPER](VIIPER.md)
 
-核对日期：2026-09-27。实现：[UsbIpPrototypeServer](../../ControllerForwardingTool/VirtualDevice/UsbIpPrototypeServer.cs)、[UsbIpNs1Device](../../ControllerForwardingTool/VirtualDevice/UsbIpNs1Device.cs)、[UsbIpClient](../../ControllerForwardingTool/VirtualDevice/UsbIpClient.cs)。以下描述内置 NS1 服务，不宣称复现 VIIPER 后端内部的全部 USB/IP 行为。
+适用版本：**1.0.1**；核对日期：2026-09-27。实现：[UsbIpPrototypeServer](../../ControllerForwardingTool/VirtualDevice/UsbIpPrototypeServer.cs)、[UsbIpNs1Device](../../ControllerForwardingTool/VirtualDevice/UsbIpNs1Device.cs)、[UsbIpClient](../../ControllerForwardingTool/VirtualDevice/UsbIpClient.cs)。以下描述内置 NS1 服务，不宣称复现 VIIPER 后端内部的全部 USB/IP 行为。
 
 ## 层次与字节序
 

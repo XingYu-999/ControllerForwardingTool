@@ -1,6 +1,6 @@
 # NS1 Pro 通信协议入口
 
-协议资料已集中到仓库根目录的 docs/protocols：
+1.0.1 协议资料已集中到仓库根目录的 docs/protocols；版本变化见[更新日志](../../CHANGELOG.md)：
 
 - [当前实现与字段说明](../../docs/protocols/NS1_PRO.md)
 - [原始研究资料](../../docs/protocols/reference/03_NS1_PRO_PROTOCOL_REFERENCE.md)

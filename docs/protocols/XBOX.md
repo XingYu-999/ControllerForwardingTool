@@ -2,7 +2,7 @@
 
 [协议目录](README.md) · [VIIPER 字段表](VIIPER.md) · [USB/GIP/蓝牙参考](reference/13_XBOX_CONTROLLER_PROTOCOL.md)
 
-核对日期：2026-09-27。当前应用不直接实现 Xbox 360 USB、Xbox One/Series GIP 或蓝牙 HID 解析器。实体设备由随附 SDL 3.4.16 后端读取，虚拟输出固定为 `045E:028E` 的 Xbox 360 身份，不能把它描述为原生 Series/One 输出。
+适用版本：**1.0.1**；核对日期：2026-09-27。当前应用不直接实现 Xbox 360 USB、Xbox One/Series GIP 或蓝牙 HID 解析器。实体设备由随附 SDL 3.4.16 后端读取，虚拟输出固定为 `045E:028E` 的 Xbox 360 身份，不能把它描述为原生 Series/One 输出。
 
 ## 输入路径
 
@@ -12,6 +12,8 @@
 
 左右扳机经 [TriggerLevels](../../ControllerForwardingTool/Input/TriggerLevels.cs) 从 SDL 标准轴独立读取，内部保留 0–255 模拟值。目标为 Nintendo 时以行程大于 0.5 设置 ZL/ZR；Xbox/PS5 保留行程。XInput 应用结构、真实 USB 报告和本项目内部消息是三层不同格式。
 
+1.0.1 支持 Xbox 源的自定义按钮与摇杆映射；模拟扳机交换 / 合并保留行程，普通按钮映射到扳机时输出满行程。实体 Xbox 可叠加明确配置的键鼠按钮，纯键鼠也可作为 Xbox 输出的主输入。
+
 ## 输出与反馈
 
 应用→VIIPER 为 20 字节内部消息，`0..3` 按钮、`4/5` 扳机、`6/8/10/12` 摇杆、`14..19` 零填充；详见 [VIIPER](VIIPER.md)。这与真实 Xbox 360 USB 的包型/长度头不同。
@@ -20,7 +22,7 @@ VIIPER→应用为 2 字节普通马达强度：strong、weak。映射器将其�
 
 ## 范围与一致性结论
 
-- Xbox 输出没有 IMU；没有传感器的 Xbox 输入转其他身份时也不生成虚假体感。
+- Xbox 输出没有 IMU。没有传感器的 Xbox 输入转其他支持体感的身份时，可显式开启键鼠补充并选择自动 / 鼠标体感；关闭补充或固定实体体感时仍无传感器数据。
 - **NS1 已经支持有效源体感转发。** 旧文档“NS1 始终不转发体感”已修正，不能由 Xbox 源缺少 IMU 推断 NS1 后端不支持。
 - 不直接实现 GIP 状态机、Xbox Wireless 适配器协议、主机认证、固件命令或独立 Elite 配置。
 - 原始硬件报文研究覆盖常见 360 USB、One/Series GIP 和部分蓝牙布局，不是所有固件的完整字节级规范。

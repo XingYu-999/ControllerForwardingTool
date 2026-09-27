@@ -1,5 +1,7 @@
 # Upstream project icons
 
+Documentation synchronized for Controller Forwarding Tool 1.0.1 (2026-09-27). Asset provenance and original download dates below are retained; see [third-party notices](../../../THIRD_PARTY_NOTICES.md).
+
 Downloaded 2026-09-26. Icons remain the property of their respective projects; used for attribution only.
 
 - avalonia.png: https://raw.githubusercontent.com/AvaloniaUI/Avalonia/main/build/Assets/Icon.png

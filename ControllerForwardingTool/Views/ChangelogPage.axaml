@@ -12,40 +12,41 @@
         <Border Background="{StaticResource AccentSoft}" CornerRadius="6" Padding="10,5" HorizontalAlignment="Left">
           <TextBlock Text="{x:Static app:AppIdentity.VersionLabel}" Foreground="{StaticResource AccentStrong}" FontWeight="SemiBold" />
         </Border>
-        <TextBlock Classes="section" Text="1.0.0 · 更新内容" />
-        <TextBlock Classes="muted" Text="提供手柄连接、虚拟转发、按键映射与输入测试，并完善连接恢复、独立配置和后台运行体验。" />
+        <TextBlock Classes="section" Text="1.0.1 · 2026-09-27" />
+        <TextBlock Classes="muted" Text="新增键鼠与混合输入，扩展所有输入方式的映射编辑，完善 NS2 USB 连接、识别振动和独立线路配置。" />
       </StackPanel>
     </Border>
     <Border Classes="card">
       <StackPanel Spacing="10">
-        <TextBlock Classes="section" Text="手柄连接与虚拟转发" />
-        <TextBlock Classes="muted" Text="• 支持 NS2 Pro 蓝牙直连，以及 Xbox、Switch Pro、PlayStation 等 Windows 手柄作为输入源。" />
-        <TextBlock Classes="muted" Text="• 提供 NS1 Pro、NS2 Pro、Xbox、PS5 和 PS5 Edge 五种虚拟 USB 输出身份，可在虚拟手柄页切换。" />
-        <TextBlock Classes="muted" Text="• 支持自动搜索与重连，保存已连接手柄的记录和自定义名称；提供可选的电脑注册开关及电量显示。" />
+        <TextBlock Classes="section" Text="键鼠输入与混合控制" />
+        <TextBlock Classes="muted" Text="• 五种虚拟输出均支持键盘 / 鼠标，无实体手柄也可启动；加载线路或启动时可选择键鼠，运行中实体手柄断开仍安全归零。" />
+        <TextBlock Classes="muted" Text="• F8 开始 / 暂停控制，Esc 释放鼠标；切换窗口、停止输出或退出时自动释放。测试页可检查 Windows 实际接收的键鼠输入。" />
+        <TextBlock Classes="muted" Text="• 鼠标可模拟右摇杆或陀螺仪。实体手柄可叠加已配置的键鼠按钮，并选择体感来源；混合输入保留实体摇杆，Xbox 输出不支持体感。" />
       </StackPanel>
     </Border>
     <Border Classes="card">
       <StackPanel Spacing="10">
         <TextBlock Classes="section" Text="按键映射与独立配置" />
-        <TextBlock Classes="muted" Text="• NS2 输入支持图形化按键映射，实时对照输入与输出，支持保存映射和恢复默认；未启动虚拟输出时也可编辑。" />
-        <TextBlock Classes="muted" Text="• 五种输出分别保存输入源、映射、震动倍率、推送频率、摇杆死区和体感等参数，切换输出时保留本次未保存的草稿。" />
-        <TextBlock Classes="muted" Text="• 推送频率可跟随输入源、按目标默认 USB 上限或使用固定频率；输入中断后自动归零，避免按键持续卡住。" />
+        <TextBlock Classes="muted" Text="• NS2 USB / 蓝牙、Windows 手柄和键鼠均支持映射；虚拟输出成功启动并被 Windows 识别后显示入口。" />
+        <TextBlock Classes="muted" Text="• 单击输出按钮查看全部来源，双击编辑多个输入；新增快速配置、摇杆双页编辑和全部映射视图。确认后可用草稿预览，应用并保存后用于实际输出。" />
+        <TextBlock Classes="muted" Text="• 按键、键鼠方向、实体摇杆、补充开关和体感来源按五条线路分别保存；映射模拟扳机时保留行程，取消弹窗不会提交未确认修改。" />
+        <TextBlock Classes="muted" Text="• 首次运行默认 NS1 Pro 线路，包含 A/B 互换和键鼠补充预设，振动倍率为 0.7x；已有用户配置继续保留。" />
       </StackPanel>
     </Border>
     <Border Classes="card">
       <StackPanel Spacing="10">
-        <TextBlock Classes="section" Text="手柄测试与修复" />
-        <TextBlock Classes="muted" Text="• 按型号展示手柄图，提供按键、摇杆、扳机行程、输入频率和体感读数，支持摇杆与陀螺仪校准、震动测试。" />
-        <TextBlock Classes="muted" Text="• 测试列表显示已连接的 NS2 蓝牙手柄和 Windows 当前识别的设备，断开后移除；模拟映射参考区默认折叠。" />
-        <TextBlock Classes="muted" Text="• 修复 Xbox / NS1 持续震动反馈过早停止的问题，并在停止输出或断开连接时清除震动状态。" />
+        <TextBlock Classes="section" Text="USB 连接与识别振动" />
+        <TextBlock Classes="muted" Text="• NS2 连接页提供 USB 选择、注册状态读取、手动注册与删除本机注册；USB 输入优先，拔线归零后等待蓝牙回连。实体注册与回连仍需实机验收。" />
+        <TextBlock Classes="muted" Text="• USB 接口被 Steam 等程序占用时显示具体提示，释放后自动重试，也可点击重新检测 USB；已打开的设备保持连接。" />
+        <TextBlock Classes="muted" Text="• 点击实体输入卡或测试设备卡发送 250 ms 识别振动，到时停止；后续游戏反馈独立处理。持续马达反馈和停止清零继续保留。" />
       </StackPanel>
     </Border>
     <Border Classes="card">
       <StackPanel Spacing="10">
-        <TextBlock Classes="section" Text="软件设置与使用体验" />
-        <TextBlock Classes="muted" Text="• 支持登录 Windows 后自启、恢复已保存的虚拟手柄模式，以及启动、最小化或关闭窗口时收起到系统托盘。" />
-        <TextBlock Classes="muted" Text="• 配置、校准、设备记录和运行日志统一保存在用户数据目录，可从设置页打开配置文件和日志目录。" />
-        <TextBlock Classes="muted" Text="• 导航栏新增更新日志页面，支持展开与折叠查看入口；关于页面同步显示当前软件版本。" />
+        <TextBlock Classes="section" Text="文档与版本同步" />
+        <TextBlock Classes="muted" Text="• 首页、使用指南、配置、构建和协议文档同步到 1.0.1，补齐键鼠、映射与 USB 注册说明。" />
+        <TextBlock Classes="muted" Text="• 设置页通过打开目录查看配置与日志；关于页和更新日志页统一显示当前应用版本。" />
+        <TextBlock Classes="muted" Text="• 保留 1.0.0 的五种虚拟输出、手柄测试与校准、连接恢复、自启、托盘和诊断功能。" />
       </StackPanel>
     </Border>
   </StackPanel>

@@ -1,6 +1,6 @@
 # NS1 Pro 通信协议参考：实体手柄、Eden 输入实现与虚拟设备边界
 
-> 历史研究归档：本文保留 Eden 与实验设备端的早期观察。当前本项目已实现虚拟 NS1 输入、IMU 与震动转码，见 [NS1 当前协议](../NS1_PRO.md)。下文的拟议目标、绝对路径、行号及实测记录均属于历史背景。
+> 历史研究归档（1.0.1 文档同步；原研究日期保留）：本文保留 Eden 与实验设备端的早期观察。当前本项目已实现虚拟 NS1 输入、IMU 与震动转码，见 [NS1 当前协议](../NS1_PRO.md)。下文的拟议目标、绝对路径、行号及实测记录均属于历史背景。
 
 > **非 Nintendo 官方协议手册。** 截至 2026-09-25，本项目未取得 Nintendo 面向公众发布的完整 NS1 Pro USB／蓝牙 HID 字节级规范。本文的报文细节是 Eden 与另一参考工程的源码观察，不能标为官方规定。用户已用**实体 NS1 Pro 手柄连接 Eden 并实际使用**；该实测确认 Eden 能使用这只手柄，但不单独判定 Eden 此次选择了下述哪一条输入路径。Nintendo [有线通信帮助](https://en-americas-support.nintendo.com/app/answers/detail/a_id/26315/~/how-to-enable%2Fdisable-pro-controller-wired-communication)只说明使用方式，不提供完整报文定义。
 

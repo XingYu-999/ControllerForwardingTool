@@ -11,6 +11,21 @@ internal static class Ns2UsbChecks
     {
         int count = 0;
         void Check(bool ok, string name) { if (!ok) throw new Exception(name); count++; }
+        Check(Ns2UsbRecovery.IsUsbCandidate(0x057E, 0x2069, 1, ""), "busy USB is detected without a readable serial");
+        Check(!Ns2UsbRecovery.IsUsbCandidate(0x057E, 0x2069, 2, "real"), "BLE does not trigger USB recovery");
+        Check(!Ns2UsbRecovery.IsUsbCandidate(0x057E, 0x2009, 1, "real"), "NS1 does not trigger NS2 recovery");
+        Check(!Ns2UsbRecovery.IsUsbCandidate(0x057E, 0x2069, 1, "ns2prowin11-virtual"), "own virtual USB is excluded from recovery");
+        var recovery = new Ns2UsbRecovery();
+        Check(recovery.ShouldRetry(0, true, true, false), "failed initial USB open is retried");
+        Check(!recovery.ShouldRetry(1, true, true, false), "USB retry is throttled while another app owns it");
+        Check(recovery.ShouldRetry(3, true, true, false), "USB retries without a hotplug after owner exits");
+        Check(!recovery.ShouldRetry(6, true, true, true), "working USB is never reset");
+        Check(!recovery.ShouldRetry(9, false, true, false), "released registration interface is never reacquired");
+        Check(!recovery.ShouldRetry(12, true, false, false), "unplugged USB is not retried");
+        recovery.RequestRetry();
+        Check(recovery.ShouldRetry(12, true, true, false), "manual detection bypasses retry delay");
+        recovery.RequestRetry();
+        Check(!recovery.ShouldRetry(12, true, true, true), "manual detection also preserves a working device");
         const ulong host = 0x123456789ABC, peer = 0x98E255C21688;
         var fake = new Controller(host, peer);
         var state = await Ns2UsbProtocol.RunAsync(UsbRegistrationAction.Inspect, host, fake.Exchange, default);

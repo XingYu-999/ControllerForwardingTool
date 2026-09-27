@@ -1,5 +1,7 @@
 # Third-party components
 
+Documentation scope: Controller Forwarding Tool 1.0.1 (2026-09-27). Component versions, attribution and original license texts below remain unchanged by this application release.
+
 Controller Forwarding Tool (手柄转发工具, formerly NS2ProWin11) licenses its original application code under the MIT License; see the accompanying `LICENSE`. Use, modification, redistribution and commercial use of that original code do not require notifying the authors or obtaining additional permission, provided the MIT copyright and permission notices are retained. Third-party code, libraries, drivers and artwork remain subject to their respective licenses; the project's MIT License does not replace those terms. Original copyright notices and license texts are retained in the paths below.
 
 From r5, releases are distributed as two adjacent downloads. From r7, their names are `ControllerForwardingTool-win-x64-*.zip` (runtime) and `ControllerForwardingTool-third-party-sources-*.zip` (matching sources); older releases use the NS2ProWin11 prefix. Source paths in the table refer to the repository or the extracted source package. The runtime keeps license texts (`licenses/` and `drivers/`) and this notice, but does not include development documentation, debug symbols or source archives. Distributors should make both packages available together.
@@ -26,9 +28,11 @@ Icons in `ControllerForwardingTool/Assets/OpenSource/` were obtained from the re
 
 The previously cited Pryxo DS4Windows Switch 2 repository returned HTTP 404 when checked on 2026-09-26; the About page retains that historical attribution and labels the unavailable source.
 
-## NS2 Bluetooth registration protocol references
+## NS2 Bluetooth and USB registration protocol references
 
 `Bluetooth/Ns2PairingProtocol.cs` is an independent implementation of the documented wire protocol in [ndeadly/switch2_controller_research](https://github.com/ndeadly/switch2_controller_research), specifically `commands.md` and `bluetooth_interface.md`. Tests include the published AES input/output vector to check byte order. [Switch2Connect](https://github.com/TommyWabg/Switch2Connect) and [Pryxo's DS4Windows branch](https://github.com/Pryxo/DS4Windows-Switch-2-Pro-Controller-and-Wireless-Support) were consulted to compare the connection sequence; their pairing source code is not copied into this implementation.
+
+The USB registration path uses the same pairing exchange with USB-specific framing and validates stored host addresses using the research repository's `memory_layout.md`. Transport access uses the bundled libusb DLL. These protocol references do not imply firmware or hardware validation of every registration operation.
 
 ## SHA-256 of bundled runtime files
 

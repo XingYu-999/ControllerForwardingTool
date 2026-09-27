@@ -26,7 +26,7 @@
           <Button Classes="nav" Classes.selected="{Binding IsVirtual}" Command="{Binding NavigateCommand}" CommandParameter="虚拟手柄" ToolTip.Tip="虚拟手柄" AutomationProperties.Name="虚拟手柄">
             <StackPanel Orientation="Horizontal" Spacing="12"><Path Width="24" Height="24" Stretch="Uniform" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.6" Data="M 2,2 H 22 V 16 H 19 M 5,16 H 2 Z M 9,12 C 6,12 5,15 4,21 C 4,24 6,25 9,21 H 17 C 20,25 22,24 22,21 C 21,15 20,12 17,12 Z M 8,15 V 20 M 5.5,17.5 H 10.5 M 17,15 H 18 M 19,18 H 20" /><TextBlock IsVisible="{Binding IsNavigationExpanded}" Text="虚拟手柄" Classes="navLabel" /></StackPanel>
           </Button>
-          <Button Classes="nav" Classes.selected="{Binding IsMapping}" Command="{Binding OpenMappingPreviewCommand}" ToolTip.Tip="按键映射" AutomationProperties.Name="按键映射">
+          <Button Classes="nav" IsVisible="{Binding IsMappingAvailable}" Classes.selected="{Binding IsMapping}" Command="{Binding OpenMappingPreviewCommand}" ToolTip.Tip="按键映射" AutomationProperties.Name="按键映射">
             <StackPanel Orientation="Horizontal" Spacing="12"><Path Width="24" Height="24" Stretch="Uniform" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.8" Data="M 2,3 H 8 V 9 H 2 Z M 16,15 H 22 V 21 H 16 Z M 11,6 H 19 V 11 M 16,8 L 19,11 L 22,8 M 13,18 H 5 V 13 M 2,16 L 5,13 L 8,16" /><TextBlock IsVisible="{Binding IsNavigationExpanded}" Text="按键映射" Classes="navLabel" /></StackPanel>
           </Button>
           <Button Classes="nav" Classes.selected="{Binding IsLogs}" Command="{Binding NavigateCommand}" CommandParameter="日志" ToolTip.Tip="日志" AutomationProperties.Name="日志">
@@ -83,10 +83,11 @@
             <Border Classes="card">
               <StackPanel Spacing="12">
                 <TextBlock Classes="section" Text="USB 连接与主机注册" />
-                <TextBlock Text="{Binding Ns2UsbStatus}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Ns2UsbStatus}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <ComboBox ItemsSource="{Binding Ns2UsbDevices}" SelectedItem="{Binding SelectedNs2UsbDevice}" IsEnabled="{Binding !IsNs2UsbBusy}" HorizontalAlignment="Stretch" PlaceholderText="选择 USB 连接的 NS2 Pro" />
                 <TextBlock Text="{Binding Ns2UsbRegistrationStatus}" TextWrapping="Wrap" />
                 <WrapPanel>
+                  <Button Margin="0,0,8,8" Content="重新检测 USB" Command="{Binding RetryNs2UsbCommand}" IsEnabled="{Binding !IsNs2UsbBusy}" />
                   <Button Classes="primary" Margin="0,0,8,8" Content="注册到这台电脑" Command="{Binding RegisterNs2UsbCommand}" IsEnabled="{Binding CanRegisterNs2Usb}" />
                   <Button Margin="0,0,8,8" Content="删除本机注册" Command="{Binding DeleteNs2UsbRegistrationCommand}" IsEnabled="{Binding CanDeleteNs2Usb}" />
                   <Button Margin="0,0,8,8" Content="刷新注册状态" Command="{Binding InspectNs2UsbCommand}" IsEnabled="{Binding CanInspectNs2Usb}" />
